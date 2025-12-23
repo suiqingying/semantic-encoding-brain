@@ -36,6 +36,7 @@ pip install -r requirements.txt
 - `src/run_multimodal_fusion.py` 文本+音频特征融合编码模型。
 - `src/run_nonlinear_model.py` 非线性编码模型（Kernel Ridge）。
 - `src/run_summary.py` 汇总日志生成 CSV。
+- `src/run_roi_analysis.py` ROI 统计（语义偏好性分析）。
 - `src/utils.py` 特征提取、延迟拼接、交叉验证等工具函数。
 - `data/atlas/` MMP 皮层分区标签。
 - `docs/task.txt` 实验任务清单。
@@ -67,4 +68,9 @@ python -m src.run_nonlinear_model --aligned-features results/text/gpt2/win200/al
 汇总日志：
 ```bash
 python -m src.run_summary --out results/summary.csv
+```
+
+ROI 统计：
+```bash
+python -m src.run_roi_analysis --input-dir results/text/gpt2/win200 --out results/roi_text_gpt2.csv
 ```

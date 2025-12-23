@@ -65,6 +65,12 @@ python -m src.run_nonlinear_model --aligned-features results/text/gpt2/win200/al
 python -m src.run_summary --out results/summary.csv
 ```
 
+### 7) ROI 统计（语义偏好性分析）
+```bash
+python -m src.run_roi_analysis --input-dir results/text/gpt2/win200 --out results/roi_text_gpt2.csv
+python -m src.run_roi_analysis --input-dir results/audio/microsoft_wavlm-base-plus/2TR --out results/roi_audio_wavlm.csv
+```
+
 ## 模型与层级说明
 
 ### 文本模型（示例默认）
@@ -93,6 +99,7 @@ python -m src.run_summary --out results/summary.csv
 - 融合结果：`results/fusion/<text>__<audio>/`
 - 非线性结果：`results/nonlinear/`
 - 汇总表：`results/summary.csv`
+- ROI 统计：`results/roi_*.csv`
 
 ## 已完成的工作
 - 已实现文本/音频/融合/非线性/汇总的可执行脚本（在 `src/` 下）。

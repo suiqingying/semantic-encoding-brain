@@ -199,12 +199,15 @@ def extract_audio_features(audio_chunks: Union[np.ndarray, torch.Tensor],
                            return_tensors='pt',
                            padding=True,
                            return_attention_mask=True)
-        inputs = {k: v.to(device) for k, v in inputs.items()}
+        if hasattr(inputs, "to"):
+            inputs = inputs.to(device)
+        else:
+            inputs = {k: v.to(device) for k, v in inputs.items()}
 
         with torch.autocast(device_type='cuda', dtype=torch.bfloat16, enabled=autocast):
             outputs = model(**inputs, output_hidden_states=True)
 
-        attention_mask = inputs.get('attention_mask')
+        attention_mask = inputs.get('attention_mask') if isinstance(inputs, dict) else None
         output_mask = None
         if attention_mask is not None:
             input_lengths = attention_mask.sum(1)

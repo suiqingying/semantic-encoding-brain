@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from transformers import AutoFeatureExtractor, AutoModel
+from transformers import AutoFeatureExtractor, AutoModel, AutoProcessor
 
 from src.config import (
     RESULTS_ROOT,
@@ -64,7 +64,10 @@ def main() -> int:
             feature_dir = model_dir / "features"
             log_path = model_dir / args.log_file
 
-            processor = AutoFeatureExtractor.from_pretrained(model_name, trust_remote_code=args.trust_remote_code)
+            try:
+                processor = AutoProcessor.from_pretrained(model_name, trust_remote_code=args.trust_remote_code)
+            except Exception:
+                processor = AutoFeatureExtractor.from_pretrained(model_name, trust_remote_code=args.trust_remote_code)
             audio_model = AutoModel.from_pretrained(model_name, output_hidden_states=True, trust_remote_code=args.trust_remote_code)
             audio_model = audio_model.to(device)
 
