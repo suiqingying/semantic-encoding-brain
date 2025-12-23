@@ -1,0 +1,13 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+numpy
+pandas
+librosa
+torch==2.9.1+cpu
+transformers
+scikit-learn
+brainspace
+neuromaps
+nibabel
+tqdm
+ipykernel

@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual env
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Data (raw/large)
+data/raw/
+
+# Derived outputs
+outputs/
+results/
+models/
+data/derived/
+data/features/
