@@ -143,6 +143,113 @@ def extract_text_features(tokens: list[list[str]], tokenizer: PreTrainedTokenize
     return layer_features
 
 
+@torch.inference_mode()
+def extract_audio_features(audio_chunks: Union[np.ndarray, torch.Tensor],
+                           processor,
+                           model: nn.Module,
+                           layers: Union[int, Iterable[int]],
+                           device: Union[str, int, torch.device],
+                           batch_size: int = 1,
+                           autocast: bool = False,
+                           pooling: Literal['mean', 'last'] = 'mean',
+                           sampling_rate: int = 16000
+                           ) -> dict[int, np.ndarray]:
+    """
+    使用预训练音频模型提取音频特征.
+
+    Parameters
+    ----------
+        audio_chunks : 切分后的音频, shape (N, L)
+        processor : 音频模型的processor (如Wav2Vec2Processor)
+        model : 预训练音频模型
+        layers : 要提取的层索引
+        device : 设备 (如'cuda', 'cpu')
+        batch_size : 批量大小
+        autocast : 是否使用混合精度推理 (仅在GPU上有效, 默认False)
+        pooling : 池化方法, 'mean'表示平均池化, 'last'表示取最后一帧
+        sampling_rate : 采样率, 默认16000
+
+    Returns
+    -------
+        dict : keys是层索引, values是对应层的音频特征数组 (shape: [num_chunks, feature_dim])
+    """
+
+    if isinstance(audio_chunks, np.ndarray):
+        audio_chunks = torch.from_numpy(audio_chunks)
+
+    if audio_chunks.ndim != 2:
+        raise ValueError("audio_chunks should be a 2D array with shape (N, L).")
+
+    if isinstance(layers, int):
+        layers = [layers]
+
+    model = model.to(device).eval()
+    hidden_states = defaultdict(list)
+    total_batches = (audio_chunks.shape[0] + batch_size - 1) // batch_size
+
+    print('Start extracting audio features !!!')
+    for i in tqdm(range(total_batches), total=total_batches):
+        batch = audio_chunks[i * batch_size:(i + 1) * batch_size]
+        if batch.dtype != torch.float32:
+            batch = batch.float()
+
+        batch_np = batch.detach().cpu().numpy()
+        inputs = processor(batch_np,
+                           sampling_rate=sampling_rate,
+                           return_tensors='pt',
+                           padding=True,
+                           return_attention_mask=True)
+        inputs = {k: v.to(device) for k, v in inputs.items()}
+
+        with torch.autocast(device_type='cuda', dtype=torch.bfloat16, enabled=autocast):
+            outputs = model(**inputs, output_hidden_states=True)
+
+        attention_mask = inputs.get('attention_mask')
+        output_mask = None
+        if attention_mask is not None:
+            input_lengths = attention_mask.sum(1)
+            if hasattr(model, '_get_feat_extract_output_lengths'):
+                output_lengths = model._get_feat_extract_output_lengths(input_lengths)
+                max_len = outputs.hidden_states[0].shape[1]
+                output_mask = (
+                    torch.arange(max_len, device=outputs.hidden_states[0].device)
+                    .unsqueeze(0) < output_lengths.unsqueeze(1)
+                )
+            else:
+                output_mask = attention_mask
+        if output_mask is not None:
+            last_token_inds = output_mask.sum(1) - 1
+
+        for l in layers:
+            layer_state = outputs.hidden_states[l]
+
+            if pooling == 'mean':
+                if output_mask is None:
+                    pooling_state = layer_state.mean(1)
+                else:
+                    mask = output_mask.unsqueeze(-1)
+                    sum_state = (layer_state * mask).sum(1)
+                    denom = mask.sum(1).clamp(min=1)
+                    pooling_state = sum_state / denom
+            elif pooling == 'last':
+                if output_mask is None:
+                    pooling_state = layer_state[:, -1]
+                else:
+                    pooling_state = layer_state[torch.arange(last_token_inds.shape[0]), last_token_inds]
+            else:
+                raise ValueError("pooling should be 'mean' or 'last'.")
+
+            hidden_states[l].append(pooling_state.cpu().float().numpy())
+            del pooling_state
+
+        del outputs, inputs, layer_state
+        if (i + 1) % 50 == 0:
+            gc.collect()
+            torch.cuda.empty_cache()
+
+    return {l: np.concatenate(states, 0) for l, states in hidden_states.items()}
+
+
 def concat_feature(features: np.ndarray, window: int, offset: int = 2) -> np.ndarray:
     """
     构建FIR features -> 血氧动力学延迟
