@@ -46,7 +46,7 @@ pip install -r requirements.txt
 
 文本模型（多模型、多层）：
 ```bash
-python -m src.run_text_models --models gpt2 bert-base-uncased qwen2-0.5b --layers 1 3 6 9 12 --ctx-words 200 --save-corr-map
+python -m src.run_text_models --models gpt2 bert-base-uncased Qwen/Qwen2-0.5B --layers 1 3 6 9 12 --ctx-words 200 --save-corr-map
 ```
 
 音频模型（多模型、多 TR）：

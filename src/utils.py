@@ -83,7 +83,10 @@ def extract_text_features(tokens: list[list[str]], tokenizer: PreTrainedTokenize
         dict : keys是层索引, values是对应层的文本特征数组 (shape: [num_texts, feature_dim])
     """
 
-    tokenizer.pad_token = tokenizer.eos_token
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token or tokenizer.sep_token
+    if tokenizer.pad_token is None:
+        raise ValueError("Tokenizer has no pad/eos/sep token for padding.")
     tokenizer.padding_side = 'right'
 
     def collate_fn(batch: list[list[str]]) -> BatchEncoding:
@@ -144,114 +147,122 @@ def extract_text_features(tokens: list[list[str]], tokenizer: PreTrainedTokenize
 
 
 @torch.inference_mode()
-def extract_audio_features(audio_chunks: Union[np.ndarray, torch.Tensor],
-                           processor,
-                           model: nn.Module,
-                           layers: Union[int, Iterable[int]],
-                           device: Union[str, int, torch.device],
-                           batch_size: int = 1,
+def extract_audio_features(audio_chunks: torch.Tensor,  # 输入：音频chunks张量 [n_chunks, chunk_len]
+                           processor,                    # 音频处理器（如Wav2Vec2Processor）
+                           model: torch.nn.Module,       # 音频模型（如Wav2Vec2Model）
+                           layers: Union[int, Iterable[int], list[int]],
+                           device: Union[str, torch.device],
+                           batch_size: int = 32,
                            autocast: bool = False,
-                           pooling: Literal['mean', 'last'] = 'mean',
-                           sampling_rate: int = 16000
-                           ) -> dict[int, np.ndarray]:
+                           pooling: Literal['mean', 'last'] = 'mean') -> dict[int, np.ndarray]:
     """
-    使用预训练音频模型提取音频特征.
-
+    使用预训练音频模型提取音频chunks的特征
+    
     Parameters
     ----------
-        audio_chunks : 切分后的音频, shape (N, L)
-        processor : 音频模型的processor (如Wav2Vec2Processor)
+        audio_chunks : 音频chunks张量, shape (n_chunks, chunk_len)
+        processor : 音频处理器（负责标准化、分词化）
         model : 预训练音频模型
-        layers : 要提取的层索引
-        device : 设备 (如'cuda', 'cpu')
-        batch_size : 批量大小
-        autocast : 是否使用混合精度推理 (仅在GPU上有效, 默认False)
-        pooling : 池化方法, 'mean'表示平均池化, 'last'表示取最后一帧
-        sampling_rate : 采样率, 默认16000
-
+        layers : 要提取的层索引（单个整数或列表）
+        device : 计算设备
+        batch_size : 批次大小
+        autocast : 是否使用混合精度
+        pooling : 池化方式 - 'mean'平均池化, 'last'取最后一个时间步
+        
     Returns
     -------
-        dict : keys是层索引, values是对应层的音频特征数组 (shape: [num_chunks, feature_dim])
+        dict : 层索引 -> 特征数组 [n_chunks, feature_dim]
     """
-
-    if isinstance(audio_chunks, np.ndarray):
-        audio_chunks = torch.from_numpy(audio_chunks)
-
-    if audio_chunks.ndim != 2:
-        raise ValueError("audio_chunks should be a 2D array with shape (N, L).")
-
+    
+    # 1. 定义内部collate函数
+    def collate_audio_fn(batch: list[torch.Tensor]) -> dict:
+        """将一批音频chunk转换为模型输入格式"""
+        # 转换为numpy数组并确保为float32
+        audio_arrays = [chunk.numpy().astype(np.float32) for chunk in batch]
+        
+        # 使用音频处理器处理
+        inputs = processor(
+            audio_arrays,
+            sampling_rate=16000,           # Wav2Vec2等模型的标准采样率
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=16000 * 3           # 3秒音频（16000*3）
+        )
+        return inputs
+    
+    # 2. 创建DataLoader
+    dataloader = DataLoader(
+        audio_chunks,                     # 你的audio_chunks张量
+        batch_size=batch_size,
+        collate_fn=collate_audio_fn,      # 使用内部collate函数
+        shuffle=False
+    )
+    
+    # 3. 统一layers参数格式
     if isinstance(layers, int):
         layers = [layers]
-
-    model = model.to(device).eval()
-    hidden_states = defaultdict(list)
-    total_batches = (audio_chunks.shape[0] + batch_size - 1) // batch_size
-
-    print('Start extracting audio features !!!')
-    for i in tqdm(range(total_batches), total=total_batches):
-        batch = audio_chunks[i * batch_size:(i + 1) * batch_size]
-        if batch.dtype != torch.float32:
-            batch = batch.float()
-
-        batch_np = batch.detach().cpu().numpy()
-        inputs = processor(batch_np,
-                           sampling_rate=sampling_rate,
-                           return_tensors='pt',
-                           padding=True,
-                           return_attention_mask=True)
-        if hasattr(inputs, "to"):
-            inputs = inputs.to(device)
-        else:
-            inputs = {k: v.to(device) for k, v in inputs.items()}
-
-        with torch.autocast(device_type='cuda', dtype=torch.bfloat16, enabled=autocast):
-            outputs = model(**inputs, output_hidden_states=True)
-
-        attention_mask = inputs.get('attention_mask') if isinstance(inputs, dict) else None
-        output_mask = None
-        if attention_mask is not None:
-            input_lengths = attention_mask.sum(1)
-            if hasattr(model, '_get_feat_extract_output_lengths'):
-                output_lengths = model._get_feat_extract_output_lengths(input_lengths)
-                max_len = outputs.hidden_states[0].shape[1]
-                output_mask = (
-                    torch.arange(max_len, device=outputs.hidden_states[0].device)
-                    .unsqueeze(0) < output_lengths.unsqueeze(1)
-                )
-            else:
-                output_mask = attention_mask
-        if output_mask is not None:
-            last_token_inds = output_mask.sum(1) - 1
-
-        for l in layers:
-            layer_state = outputs.hidden_states[l]
-
+    
+    # 4. 准备模型和存储结构
+    model = model.eval().to(device)
+    hidden_states = defaultdict(list)     # 存储各层特征
+    
+    print('开始提取音频特征...')
+    
+    # 5. 逐批次提取特征
+    for ii, batch in tqdm(enumerate(dataloader), total=len(dataloader)):
+        # 移动数据到设备
+        batch = {k: v.to(device) for k, v in batch.items()}
+        
+        # 混合精度推理
+        with torch.autocast(device_type='cuda' if 'cuda' in str(device) else 'cpu', 
+                          dtype=torch.bfloat16, enabled=autocast):
+            outputs = model(**batch, output_hidden_states=True)
+        
+        # 6. 提取指定层的特征并池化
+        for layer_idx in layers:
+            # 获取指定层的输出 [batch_size, seq_len, hidden_dim]
+            layer_state = outputs.hidden_states[layer_idx]
+            
+            # 池化操作
             if pooling == 'mean':
-                if output_mask is None:
-                    pooling_state = layer_state.mean(1)
+                # 使用attention mask计算有效长度的均值
+                if 'attention_mask' in batch:
+                    mask = batch['attention_mask'].unsqueeze(-1)  # [batch, seq_len, 1]
+                    sum_state = (layer_state * mask).sum(dim=1)    # [batch, hidden_dim]
+                    pooling_state = sum_state / mask.sum(dim=1)    # [batch, hidden_dim]
                 else:
-                    mask = output_mask.unsqueeze(-1)
-                    sum_state = (layer_state * mask).sum(1)
-                    denom = mask.sum(1).clamp(min=1)
-                    pooling_state = sum_state / denom
+                    # 如果没有mask，简单计算均值
+                    pooling_state = layer_state.mean(dim=1)        # [batch, hidden_dim]
+                    
             elif pooling == 'last':
-                if output_mask is None:
-                    pooling_state = layer_state[:, -1]
+                # 取最后一个有效时间步
+                if 'attention_mask' in batch:
+                    last_token_inds = batch['attention_mask'].sum(dim=1) - 1  # [batch]
+                    pooling_state = layer_state[
+                        torch.arange(last_token_inds.shape[0], device=device),
+                        last_token_inds
+                    ]  # [batch, hidden_dim]
                 else:
-                    pooling_state = layer_state[torch.arange(last_token_inds.shape[0]), last_token_inds]
-            else:
-                raise ValueError("pooling should be 'mean' or 'last'.")
-
-            hidden_states[l].append(pooling_state.cpu().float().numpy())
-            del pooling_state
-
-        del outputs, inputs, layer_state
-        if (i + 1) % 50 == 0:
+                    # 如果没有mask，取序列最后一个
+                    pooling_state = layer_state[:, -1, :]  # [batch, hidden_dim]
+            
+            # 存储到CPU
+            hidden_states[layer_idx].append(pooling_state.cpu().float().numpy())
+        
+        # 7. 定期清理显存（可选）
+        if (ii + 1) % 50 == 0:
             gc.collect()
-            torch.cuda.empty_cache()
-
-    return {l: np.concatenate(states, 0) for l, states in hidden_states.items()}
-
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+    
+    # 8. 合并所有批次的特征
+    layer_features = {
+        layer_idx: np.concatenate(states, axis=0) 
+        for layer_idx, states in hidden_states.items()
+    }
+    
+    return layer_features
 
 def concat_feature(features: np.ndarray, window: int, offset: int = 2) -> np.ndarray:
     """

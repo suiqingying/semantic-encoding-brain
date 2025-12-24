@@ -6,15 +6,17 @@ __pycache__/
 
 # Virtual env
 .venv/
+.venv311/
 
 # Jupyter
 .ipynb_checkpoints/
 
 # OS
 .DS_Store
+.vscode/
 
 # Data (raw/large)
-data/raw/
+data/
 
 # Derived outputs
 outputs/

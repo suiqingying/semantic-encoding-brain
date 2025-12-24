@@ -25,7 +25,7 @@ cd /home/suiqingying/bio
 ```bash
 python -m src.run_text_models --models gpt2 --layers 1 3 6 9 12 --ctx-words 200
 python -m src.run_text_models --models bert-base-uncased --layers 1 3 6 9 12 --ctx-words 200
-python -m src.run_text_models --models qwen2-0.5b --layers 1 3 6 9 12 --ctx-words 200
+python -m src.run_text_models --models Qwen/Qwen2-0.5B --layers 1 3 6 9 12 --ctx-words 200
 ```
 
 ### 3) 音频模型（多模型/多TR/多层，满足“≥3模型 + 多层”）
@@ -76,7 +76,7 @@ python -m src.run_roi_analysis --input-dir results/audio/microsoft_wavlm-base-pl
 ### 文本模型（示例默认）
 - `gpt2`
 - `bert-base-uncased`
-- `qwen2-0.5b`
+- `Qwen/Qwen2-0.5B`
 
 ### 音频模型（示例默认）
 - `facebook/wav2vec2-base-960h`
