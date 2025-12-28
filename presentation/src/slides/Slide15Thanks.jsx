@@ -3,7 +3,7 @@ import { COLORS } from './_nord'
 
 const NUM_PARTICLES = 20000;
 
-export default function Slide20Thanks() {
+export default function Slide15Thanks() {
   const [step, setStep] = useState('idle'); 
   const canvasRef = useRef(null);
   const particlesRef = useRef([]);
