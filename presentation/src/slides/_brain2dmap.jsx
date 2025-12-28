@@ -71,13 +71,46 @@ function decodeRgbToId(r, g, b) {
   return r + (g << 8) + (b << 16)
 }
 
-function roiBaseColor(id) {
-  if (!id) return [0.84, 0.82, 0.78]
-  // Keep the base map clean: do not color every ROI by default.
-  return [0.84, 0.82, 0.78]
+function clamp01(v) {
+  return Math.max(0, Math.min(1, v))
 }
 
-export function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover, ariaLabel = 'ROI map' }) {
+function clampRgb01(rgb) {
+  return [clamp01(rgb[0]), clamp01(rgb[1]), clamp01(rgb[2])]
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * t
+}
+
+function lerpRgb(a, b, t) {
+  return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)]
+}
+
+function roiBaseColor(id, roiInfoById, { roiValueById, roiValueFn, colorLow, colorHigh }) {
+  if (!id) return [0.84, 0.82, 0.78]
+  const info = roiInfoById?.get?.(id) || null
+  const v =
+    (roiValueById && Object.prototype.hasOwnProperty.call(roiValueById, id) ? roiValueById[id] : undefined) ??
+    (roiValueFn ? roiValueFn(id, info) : undefined)
+
+  if (typeof v !== 'number' || !Number.isFinite(v)) return [0.84, 0.82, 0.78]
+  const t = clamp01(v)
+  return lerpRgb(colorLow, colorHigh, t)
+}
+
+export function Brain2DMap({
+  surfaceUrl,
+  labelUrl,
+  onSelect,
+  onHover,
+  ariaLabel = 'ROI map',
+  roiColorById,
+  roiValueById,
+  roiValueFn,
+  colorLow = [0.176, 0.427, 0.651], // blue
+  colorHigh = [0.85, 0.22, 0.22], // red
+}) {
   const canvasRef = useRef(null)
   const rendererRef = useRef(null)
   const sceneRef = useRef(null)
@@ -86,6 +119,7 @@ export function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover, ariaLabel 
   const meshRef = useRef(null)
   const pickMeshRef = useRef(null)
   const outlineRef = useRef(null)
+  const shellRef = useRef(null)
   const pickTargetRef = useRef(null)
   const fitRef = useRef(null)
   const selectedRef = useRef(null)
@@ -176,6 +210,8 @@ export function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover, ariaLabel 
       pickTargetRef.current?.dispose?.()
       outlineRef.current?.geometry?.dispose?.()
       outlineRef.current?.material?.dispose?.()
+      shellRef.current?.geometry?.dispose?.()
+      shellRef.current?.material?.dispose?.()
       renderer.dispose()
     }
   }, [])
@@ -199,6 +235,47 @@ export function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover, ariaLabel 
         }
         if (canceled) return
 
+        // Precompute ROI centroid in (y,z) and normalize to [0,1] for simple per-ROI heuristics.
+        let minY = Infinity
+        let maxY = -Infinity
+        let minZ = Infinity
+        let maxZ = -Infinity
+        for (let i = 0; i < labels.length; i++) {
+          const y = vertices[i * 3 + 1]
+          const z = vertices[i * 3 + 2]
+          if (y < minY) minY = y
+          if (y > maxY) maxY = y
+          if (z < minZ) minZ = z
+          if (z > maxZ) maxZ = z
+        }
+        const roiAgg = new Map()
+        for (let i = 0; i < labels.length; i++) {
+          const id = labels[i] >>> 0
+          let agg = roiAgg.get(id)
+          if (!agg) {
+            agg = { id, count: 0, sumY: 0, sumZ: 0 }
+            roiAgg.set(id, agg)
+          }
+          agg.count += 1
+          agg.sumY += vertices[i * 3 + 1]
+          agg.sumZ += vertices[i * 3 + 2]
+        }
+        const roiInfoById = new Map()
+        const ySpan = Math.max(1e-9, maxY - minY)
+        const zSpan = Math.max(1e-9, maxZ - minZ)
+        for (const agg of roiAgg.values()) {
+          const cy = agg.sumY / agg.count
+          const cz = agg.sumZ / agg.count
+          roiInfoById.set(agg.id, {
+            id: agg.id,
+            count: agg.count,
+            cy,
+            cz,
+            ny: (cy - minY) / ySpan,
+            nz: (cz - minZ) / zSpan,
+          })
+        }
+
         const geom = new THREE.BufferGeometry()
         geom.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
         geom.setIndex(new THREE.BufferAttribute(triangles, 1))
@@ -207,7 +284,10 @@ export function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover, ariaLabel 
         const colors = new Float32Array((vertices.length / 3) * 3)
         const base = new Float32Array(colors.length)
         for (let i = 0; i < labels.length; i++) {
-          const [r, g, b] = roiBaseColor(labels[i])
+          const roiId = labels[i] >>> 0
+          const pre = roiColorById ? roiColorById[String(roiId)] : undefined
+          const rgb = Array.isArray(pre) && pre.length === 3 ? clampRgb01(pre) : roiBaseColor(roiId, roiInfoById, { roiValueById, roiValueFn, colorLow, colorHigh })
+          const [r, g, b] = rgb
           base[i * 3] = r
           base[i * 3 + 1] = g
           base[i * 3 + 2] = b
@@ -219,6 +299,8 @@ export function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover, ariaLabel 
 
         const mesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: true }))
         mesh.userData.base = base
+        mesh.userData.labels = labels
+        mesh.userData.roiInfoById = roiInfoById
 
         const pickGeom = geom.clone()
         const pickColors = new Uint8Array((vertices.length / 3) * 3)
@@ -232,12 +314,12 @@ export function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover, ariaLabel 
         pickGeom.setAttribute('color', new THREE.BufferAttribute(pickColors, 3, true))
         const pickMesh = new THREE.Mesh(pickGeom, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide }))
 
-        // Build ROI boundary outlines: edges where adjacent vertices have different labels.
-        const edges = new Set()
+        // Build ROI boundary outlines: edges where adjacent vertices have different non-zero labels.
+        const roiEdges = new Set()
         const idx = triangles
         const pos = vertices
-        const positions = []
-        const pushEdge = (a, b) => {
+        const roiPositions = []
+        const pushEdge = (edges, positions, a, b) => {
           const min = a < b ? a : b
           const max = a < b ? b : a
           const key = (min << 16) | max
@@ -258,26 +340,44 @@ export function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover, ariaLabel 
           const la = labels[a]
           const lb = labels[b]
           const lc = labels[c]
-          if (la !== lb) pushEdge(a, b)
-          if (lb !== lc) pushEdge(b, c)
-          if (lc !== la) pushEdge(c, a)
+          if (la !== lb) {
+            if (la !== 0 && lb !== 0) pushEdge(roiEdges, roiPositions, a, b)
+          }
+          if (lb !== lc) {
+            if (lb !== 0 && lc !== 0) pushEdge(roiEdges, roiPositions, b, c)
+          }
+          if (lc !== la) {
+            if (lc !== 0 && la !== 0) pushEdge(roiEdges, roiPositions, c, a)
+          }
         }
         const outlineGeom = new THREE.BufferGeometry()
-        outlineGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3))
-        const outlineMat = new THREE.LineBasicMaterial({
-          color: 0x233044,
+        outlineGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(roiPositions), 3))
+        const outlineMat = new THREE.LineBasicMaterial({ color: 0x233044, transparent: true, opacity: 0.16, depthTest: true, depthWrite: false })
+        const outline = new THREE.LineSegments(outlineGeom, outlineMat)
+        outline.renderOrder = 2
+        
+        // Outer silhouette outline: a slightly scaled back-face mesh in black.
+        const shellMat = new THREE.MeshBasicMaterial({
+          color: 0x000000,
+          side: THREE.BackSide,
           transparent: true,
-          opacity: 0.22,
+          opacity: 0.55,
           depthTest: true,
           depthWrite: false,
+          polygonOffset: true,
+          polygonOffsetFactor: 1,
+          polygonOffsetUnits: 1,
         })
-        const outline = new THREE.LineSegments(outlineGeom, outlineMat)
+        const shell = new THREE.Mesh(geom, shellMat)
+        shell.scale.set(1.008, 1.008, 1.008)
+        shell.renderOrder = 0
 
         const scene = sceneRef.current
         const pickScene = pickSceneRef.current
         const old = meshRef.current
         const oldPick = pickMeshRef.current
         const oldOutline = outlineRef.current
+        const oldShell = shellRef.current
         if (old) {
           scene.remove(old)
           old.geometry.dispose()
@@ -293,13 +393,20 @@ export function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover, ariaLabel 
           oldOutline.geometry.dispose()
           oldOutline.material.dispose()
         }
+        if (oldShell) {
+          scene.remove(oldShell)
+          oldShell.geometry.dispose()
+          oldShell.material.dispose()
+        }
 
+        scene.add(shell)
         scene.add(mesh)
         scene.add(outline)
         pickScene.add(pickMesh)
         meshRef.current = mesh
         pickMeshRef.current = pickMesh
         outlineRef.current = outline
+        shellRef.current = shell
 
         const box = new THREE.Box3().setFromObject(mesh)
         const size = new THREE.Vector3()
@@ -335,7 +442,6 @@ export function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover, ariaLabel 
         }
         camera.updateProjectionMatrix()
 
-        mesh.userData.labels = labels
         selectedRef.current = null
         hoverRef.current = null
         onSelect?.(null)
@@ -350,7 +456,7 @@ export function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover, ariaLabel 
     return () => {
       canceled = true
     }
-  }, [surfaceUrl, labelUrl, onHover, onSelect])
+  }, [surfaceUrl, labelUrl, onHover, onSelect, roiColorById, roiValueById, roiValueFn, colorLow, colorHigh])
 
   const applyHighlight = (selectedId, hoverId) => {
     const mesh = meshRef.current
@@ -372,9 +478,10 @@ export function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover, ariaLabel 
         b = Math.min(1, b + 0.12)
       }
       if (selectedId != null && id === selectedId) {
-        r = Math.min(1, r + 0.35)
-        g = Math.min(1, g + 0.35)
-        b = Math.min(1, b + 0.35)
+        const dark = 0.55
+        r *= dark
+        g *= dark
+        b *= dark
       }
       colors.setXYZ(i, r, g, b)
     }
@@ -405,6 +512,10 @@ export function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover, ariaLabel 
 
   const onClick = (e) => {
     const id = pickRoiAt(e.clientX, e.clientY)
+    if (id == null) {
+      applyHighlight(selectedRef.current, hoverRef.current)
+      return
+    }
     selectedRef.current = id
     onSelect?.(id)
     applyHighlight(selectedRef.current, hoverRef.current)

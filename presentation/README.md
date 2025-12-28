@@ -47,13 +47,13 @@
 src/
 ├── slides/                 # 幻灯片页面组件
 │   ├── Slide01Cover.jsx
-│   ├── Slide02Methodology.jsx
-│   ├── Slide03Theory.jsx
-│   ├── Slide04Dataset.jsx
+│   ├── Slide02Theory.jsx
+│   ├── Slide03Dataset.jsx
+│   ├── Slide04Methodology.jsx
 │   ├── Slide05FeatureIntro.jsx
 │   ├── Slide06SemanticFeature.jsx
 │   ├── Slide07AcousticFeature.jsx
-│   └── ... (共 19 页)
+│   └── ... (共 15 页)
 ├── styles.css              # 全局样式与动画定义
 └── App.jsx                 # 路由与键盘事件管理器
 public/
