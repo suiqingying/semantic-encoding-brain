@@ -1,6 +1,6 @@
 ﻿import { Card, COLORS, NordSlide, Text, Title } from './_nord'
 
-export default function Slide21Summary() {
+export default function Slide14Summary() {
   return (
     <NordSlide>
       <Title>综合与展望</Title>
