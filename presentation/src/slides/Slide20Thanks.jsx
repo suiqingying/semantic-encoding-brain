@@ -10,7 +10,7 @@ export default function Slide20Thanks() {
   const targetsRef = useRef([]);
   const mouseRef = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
   const stepRef = useRef('idle');
-  const bgElementsRef = useRef({ stars: [], waves: [], dataStreams: [], lines: [] });
+  const bgElementsRef = useRef({ bokeh: [], dataStreams: [] });
 
   const credits = {
     name: "THANK YOU",
@@ -29,7 +29,7 @@ export default function Slide20Thanks() {
       const tCanvas = document.createElement('canvas');
       tCanvas.width = w; tCanvas.height = h;
       const tCtx = tCanvas.getContext('2d');
-      tCtx.fillStyle = 'black'; 
+      tCtx.fillStyle = 'black';
       tCtx.textAlign = 'center';
       tCtx.textBaseline = 'middle';
       const baseFontSize = w / 1366;
@@ -39,60 +39,61 @@ export default function Slide20Thanks() {
       tCtx.fillText(credits.title, w / 2, h / 2 + (55 * baseFontSize));
       tCtx.font = `${Math.floor(28 * baseFontSize)}px system-ui`;
       tCtx.fillText(credits.info, w / 2, h / 2 + (130 * baseFontSize));
+      
       const data = tCtx.getImageData(0, 0, w, h).data;
-      const pts = [];
+      const edgePts = [];
+      const fillPts = [];
       const gap = 2.0; 
+      
       for (let y = gap; y < h - gap; y += gap) {
         for (let x = gap; x < w - gap; x += gap) {
           const idx = (Math.floor(y) * w + Math.floor(x)) * 4;
           if (data[idx + 3] > 128) {
             const isEdge = data[((Math.floor(y)-1) * w + Math.floor(x)) * 4 + 3] < 128 || data[((Math.floor(y)+1) * w + Math.floor(x)) * 4 + 3] < 128 || data[(Math.floor(y) * w + (Math.floor(x)-1)) * 4 + 3] < 128 || data[(Math.floor(y) * w + (Math.floor(x)+1)) * 4 + 3] < 128;
-            if (isEdge || Math.random() < 0.25) pts.push({ x, y, isEdge });
+            if (isEdge) {
+              edgePts.push({ x, y, isEdge: true });
+            } else if (Math.random() < 0.4) {
+              fillPts.push({ x, y, isEdge: false });
+            }
           }
         }
       }
-      return pts.sort((a, b) => (b.isEdge ? 1 : -1) - (a.isEdge ? 1 : -1));
+      // Combine: Ensure edges are handled first, then fill
+      return [...edgePts, ...fillPts].slice(0, NUM_PARTICLES);
     };
 
     const setupBG = (w, h) => {
-      const stars = Array.from({ length: 300 }).map(() => ({
+      const bokeh = Array.from({ length: 40 }).map(() => ({
         x: Math.random() * w, y: Math.random() * h,
-        size: Math.random() * 2.5 + 1.0,
-        baseAlpha: Math.random() * 0.2 + 0.1,
-        phase: Math.random() * Math.PI * 2,
-        speed: 0.01 + Math.random() * 0.02
+        size: Math.random() * 150 + 50,
+        color: Math.random() > 0.5 ? 'rgba(136, 192, 208, 0.05)' : 'rgba(235, 203, 139, 0.04)',
+        vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2
       }));
-      const dataStreams = Array.from({ length: 14 }).map((_, i) => ({
-        x: i < 7 ? (Math.random()*250) : (w - Math.random()*250),
+      const dataStreams = Array.from({ length: 12 }).map((_, i) => ({
+        x: i < 6 ? (Math.random()*200 + 50) : (w - Math.random()*200 - 50),
         y: Math.random() * h,
-        speed: 0.2 + Math.random() * 1.0,
-        chars: Array.from({ length: 12 }).map(() => Math.floor(Math.random()*16).toString(16).toUpperCase())
+        speed: 0.3 + Math.random() * 1.5,
+        chars: Array.from({ length: 10 }).map(() => Math.floor(Math.random()*16).toString(16).toUpperCase())
       }));
-      const lines = Array.from({ length: 25 }).map(() => ({
-        p1: Math.floor(Math.random() * 300),
-        p2: Math.floor(Math.random() * 300),
-        opacity: Math.random() * 0.15 + 0.05
-      }));
-      bgElementsRef.current = { stars, dataStreams, lines };
+      bgElementsRef.current = { bokeh, dataStreams };
     };
 
     const initParticles = (w, h, targetPts) => {
       const colorBases = [
-        'rgba(46, 52, 64, ', 
-        'rgba(59, 66, 82, ',  
-        'rgba(45, 109, 166, ', 
-        'rgba(191, 97, 106, ', 
-        'rgba(208, 135, 112, '  
+        { r: 46, g: 52, b: 64 },   // Nord 0
+        { r: 45, g: 109, b: 166 }, // Nord Blue
+        { r: 180, g: 142, b: 173 }, // Nord Purple
+        { r: 208, g: 135, b: 112 }  // Nord Orange
       ];
       return Array.from({ length: NUM_PARTICLES }).map((_, i) => {
-        const hasTarget = i < targetPts.length;
-        const target = hasTarget ? targetPts[i] : null;
+        const target = i < targetPts.length ? targetPts[i] : null;
+        const c = colorBases[i % colorBases.length];
         return {
           x: Math.random() * w, y: Math.random() * h,
-          vx: (Math.random() - 0.5) * 1.0, vy: (Math.random() - 0.5) * 1.0,
-          size: target?.isEdge ? 1.4 : (hasTarget ? 2.0 : (Math.random() * 2.0 + 0.8)),
-          alpha: hasTarget ? (target.isEdge ? 0.95 : 0.65) : (Math.random() * 0.3 + 0.15),
-          colorBase: colorBases[i % colorBases.length],
+          vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2,
+          size: target?.isEdge ? 1.4 : (target ? 2.4 : (Math.random() * 2.5 + 1.0)),
+          alpha: target ? (target.isEdge ? 0.98 : 0.6) : (Math.random() * 0.3 + 0.1),
+          color: c,
           target: target,
           phase: Math.random() * Math.PI * 2
         };
@@ -119,49 +120,33 @@ export default function Slide20Thanks() {
     const render = (time) => {
       const w = window.innerWidth, h = window.innerHeight;
       const s = stepRef.current;
-      
-      // Use standard composite for better performance
       ctx.globalCompositeOperation = 'source-over';
       ctx.clearRect(0, 0, w, h);
 
-      // --- 1. Fast Background ---
+      // --- 1. Background Layer ---
       const grad = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, w);
-      grad.addColorStop(0, '#FFFFFF'); 
-      grad.addColorStop(1, '#F5F5F0'); 
+      grad.addColorStop(0, '#FFFFFF'); grad.addColorStop(1, '#F5F5F0');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
 
-      // --- 2. BG Elements ---
-      bgElementsRef.current.stars.forEach(star => {
-        const twinkle = star.baseAlpha + Math.sin(time * star.speed + star.phase) * 0.1;
-        ctx.fillStyle = `rgba(76, 86, 106, ${Math.max(0.05, twinkle)})`; 
-        ctx.beginPath(); ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2); ctx.fill();
-      });
-      ctx.lineWidth = 1.2;
-      bgElementsRef.current.lines.forEach(l => {
-        const s1 = bgElementsRef.current.stars[l.p1];
-        const s2 = bgElementsRef.current.stars[l.p2];
-        ctx.strokeStyle = `rgba(129, 161, 193, ${l.opacity})`;
-        ctx.beginPath(); ctx.moveTo(s1.x, s1.y); ctx.lineTo(s2.x, s2.y); ctx.stroke();
+      bgElementsRef.current.bokeh.forEach(b => {
+        b.x += b.vx; b.y += b.vy;
+        if(b.x < -150) b.x = w+150; if(b.x > w+150) b.x = -150;
+        ctx.fillStyle = b.color;
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2); ctx.fill();
       });
 
-      ctx.font = 'bold 18px ui-monospace, monospace';
+      // --- 2. Data Streams ---
+      ctx.font = 'bold 16px ui-monospace, monospace';
       bgElementsRef.current.dataStreams.forEach(stream => {
-        stream.y += stream.speed; if(stream.y > h) stream.y = -300;
+        stream.y += stream.speed; if(stream.y > h) stream.y = -200;
         stream.chars.forEach((char, idx) => {
-          ctx.fillStyle = `rgba(46, 52, 64, ${0.35 - (idx * 0.03)})`; 
-          ctx.fillText(char, stream.x, stream.y + idx*24);
+          ctx.fillStyle = `rgba(46, 52, 64, ${0.3 - (idx * 0.02)})`;
+          ctx.fillText(char, stream.x, stream.y + idx*22);
         });
       });
 
-      // --- 3. Grid ---
-      ctx.strokeStyle = 'rgba(46, 52, 64, 0.03)';
-      ctx.lineWidth = 1;
-      const gapSize = 120;
-      for(let x=0; x<w; x+=gapSize) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
-      for(let y=0; y<h; y+=gapSize) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
-
-      // --- 4. Dynamic Particles (Optimized) ---
+      // --- 3. Interactive Particles ---
       sm.x += (mouseRef.current.x - sm.x) * 0.12; sm.y += (mouseRef.current.y - sm.y) * 0.12;
 
       particlesRef.current.forEach((p) => {
@@ -174,21 +159,34 @@ export default function Slide20Thanks() {
           const dist = Math.sqrt(dx*dx + dy*dy) || 1;
           const angle = Math.atan2(dy, dx);
           const force = Math.max(0, 1 - dist / 1000);
-          p.vx += Math.cos(angle) * force * 1.6 + Math.cos(angle - Math.PI/2) * force * 0.9;
-          p.vy += Math.sin(angle) * force * 1.6 + Math.sin(angle - Math.PI/2) * force * 0.9;
-          p.vx *= dist < 40 ? 0.75 : 0.93; p.vy *= dist < 40 ? 0.75 : 0.93;
+          p.vx += Math.cos(angle) * force * 2.0 + Math.cos(angle - Math.PI/2) * force * 1.2;
+          p.vy += Math.sin(angle) * force * 2.0 + Math.sin(angle - Math.PI/2) * force * 1.2;
+          p.vx *= dist < 30 ? 0.7 : 0.92; p.vy *= dist < 30 ? 0.7 : 0.92;
         } else if (s === 'crystallize') {
           if (p.target) {
-            p.x += (p.target.x - p.x) * 0.18; p.y += (p.target.y - p.y) * 0.18;
-            p.vx = 0; p.vy = 0;
+            const dxm = mouseRef.current.x - p.target.x;
+            const dym = mouseRef.current.y - p.target.y;
+            const distM = Math.sqrt(dxm*dxm + dym*dym);
+            let tx = p.target.x, ty = p.target.y;
+            if (distM < 120) {
+              const pushForce = (1 - distM / 120) * 50;
+              tx -= (dxm / distM) * pushForce;
+              ty -= (dym / distM) * pushForce;
+            }
+            const dx = tx - p.x, dy = ty - p.y;
+            p.vx = dx * 0.18; p.vy = dy * 0.18;
             p.alpha += ((p.target.isEdge ? 0.98 : 0.65) - p.alpha) * 0.1;
           } else {
-            p.vx *= 0.92; p.vy *= 0.92; p.alpha *= 0.92; 
+            p.vx *= 0.92; p.vy *= 0.92; p.alpha *= 0.94; 
           }
         }
-        if (s !== 'crystallize' || !p.target) { p.x += p.vx; p.y += p.vy; }
-        const alpha = s === 'idle' ? (p.alpha * (0.5 + Math.sin(time*0.003 + p.phase)*0.5)) : p.alpha;
-        ctx.fillStyle = p.colorBase + alpha + ')';
+        p.x += p.vx; p.y += p.vy;
+        const renderAlpha = s === 'idle' ? (p.alpha * (0.5 + Math.sin(time*0.003 + p.phase)*0.5)) : p.alpha;
+        let colorStr = `rgba(${p.color.r},${p.color.g},${p.color.b},${renderAlpha})`;
+        if (s === 'crystallize' && p.target && Math.sqrt(p.vx*p.vx + p.vy*p.vy) > 2) {
+          colorStr = `rgba(208, 135, 112, ${renderAlpha})`; 
+        }
+        ctx.fillStyle = colorStr;
         ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
       });
       animId = requestAnimationFrame(render);
