@@ -1,43 +1,78 @@
-# 脑表面演示（Slides）
+# 语义解码与大脑编码模型演示系统 (Semantic Encoding Brain Presentation)
 
-该目录是一个可运行的 PPT 风格演示工程（React + Vite）。每一页 slide 独立成文件，便于维护。
+这是一个基于 **React + Vite + Tauri** 构建的高性能交互式演示系统，专为展示“多模态预训练模型的全脑语义映射”研究成果而设计。
 
-## 启动
+本项目摒弃了传统的静态 PPT 模式，采用代码生成的动态可视化组件，提供沉浸式的演示体验。
+
+## ✨ 核心特性
+
+*   **沉浸式封面 (Slide 1)**:
+    *   **粒子大脑系统**: 由 5000+ 个动态粒子构成的 3D 大脑轮廓。
+    *   **全局鼠标追踪**: 粒子云随鼠标全屏漂浮，模拟“注视”效果。
+    *   **物理交互**: 鼠标悬停产生局部排斥力场，粒子动态避让。
+    *   **高对比视觉**: 针对浅色背景优化的深午夜蓝配色与神经脉冲高亮。
+
+*   **动态方法论展示 (Slide 2)**:
+    *   **实时波形渲染**: 基于 `requestAnimationFrame` 的高频正弦波动画，模拟 fMRI 信号与噪声叠加过程。
+    *   **高性能架构**: 采用直接 DOM 操作 (Direct DOM Manipulation) 替代 React 状态驱动，消除渲染开销，确保在任何配置下流畅运行。
+    *   **响应式布局**: 波形图高度自适应容器，左右分栏自动对齐，完美填充屏幕。
+
+*   **全屏自适应设计**:
+    *   摒弃固定比例画布，采用 **流式布局 (Fluid Layout)**。
+    *   无论是在宽屏显示器还是投影仪上，内容均自动铺满屏幕，无黑色/白色边框。
+    *   智能滚动支持：在超小分辨率下自动启用滚动条，防止内容截断。
+
+*   **Nord 设计语言**: 全局统一采用 Nord 极地配色方案，提供专业、冷静且舒适的科研视觉风格。
+
+## 🚀 快速开始
+
+### 开发环境
 
 ```bash
-cd presentation
+# 安装依赖
 npm install
+
+# 启动网页预览 (浏览器模式)
 npm run dev
 ```
 
-## 打包为桌面应用（Tauri）
+### 桌面应用 (Tauri)
 
-说明：Tauri 是“桌面壳 + 系统 WebView”的方案，不会依赖外部浏览器（但仍使用系统自带 WebView 引擎）。
-默认以无边框全屏模式启动。
-
-快捷键：
-- `F11`：全屏 / 窗口切换
-- `Esc`：退出全屏（回到窗口模式）
-- `Alt+F4`：退出应用（Windows）
-- `Ctrl+Q`：退出应用
+本项目集成了 Tauri，可打包为独立的本地可执行文件 (.exe)，性能更佳且无浏览器地址栏干扰。
 
 ```bash
-cd presentation
-npm install
+# 启动桌面开发模式
 npm run tauri:dev
-```
 
-打包：
-
-```bash
-cd presentation
+# 打包生产环境版本
 npm run tauri:build
 ```
 
-Windows 备注：需要安装 WebView2 Runtime（大多数系统已自带）。
+## 🎮 演示控制
 
-## 目录结构
-- `src/slides/`：每一页一个文件
-- `src/slides/Slide15SemanticMap.jsx`：语义地图（可点击 ROI）
-- `src/slides/Slide16AcousticMap.jsx`：声学地图（可点击 ROI）
-- `public/atlas/`：演示用的表面文件（从仓库 `data/atlas/atlases/fsaverage/` 拷贝）
+*   **切换幻灯片**: `→` (右键) / `Space` (空格) / `Enter` (回车) 下一页；`←` (左键) 上一页。
+*   **全屏切换**: `F11`
+*   **退出全屏**: `Esc`
+*   **关闭应用**: `Ctrl + Q` 或 `Alt + F4`
+
+## 📂 目录结构
+
+```
+src/
+├── slides/                 # 幻灯片页面组件
+│   ├── Slide01Cover.jsx        # 封面（粒子大脑）
+│   ├── Slide02Methodology.jsx  # 方法论（动态波形）
+│   ├── SlideXX...jsx           # 后续章节页面
+│   └── _nord.jsx               # Nord 主题 UI 组件库
+├── styles.css              # 全局样式与动画定义
+└── App.jsx                 # 路由与键盘事件管理器
+public/
+├── assets/                 # 静态资源（图标、大脑轮廓图等）
+└── atlas/                  # 3D 脑表面模型文件
+```
+
+## 🛠️ 技术栈
+
+*   **Frontend**: React 18, Vite
+*   **Desktop Shell**: Tauri 2.0 (Rust)
+*   **Visuals**: Canvas API (Slide 1), SVG Direct Manipulation (Slide 2)
