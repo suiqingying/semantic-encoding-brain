@@ -3,9 +3,15 @@ import { useEffect, useMemo, useState } from 'react'
 export default function App() {
   const slides = useMemo(() => {
     const modules = import.meta.glob('./slides/Slide[0-9][0-9]*.jsx', { eager: true })
-    return Object.keys(modules)
+    const ordered = Object.keys(modules)
       .sort()
       .map((k) => modules[k].default)
+    // Move current slide #2 to position #4 (1-based).
+    if (ordered.length >= 4) {
+      const [second] = ordered.splice(1, 1)
+      ordered.splice(3, 0, second)
+    }
+    return ordered
   }, [])
   const [index, setIndex] = useState(0)
   const Slide = slides[index] || (() => null)
