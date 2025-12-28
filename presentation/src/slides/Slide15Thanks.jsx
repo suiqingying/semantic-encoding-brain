@@ -3,14 +3,14 @@ import { COLORS } from './_nord'
 
 const NUM_PARTICLES = 20000;
 
-export default function Slide15Thanks() {
+export default function Slide20Thanks() {
   const [step, setStep] = useState('idle'); 
   const canvasRef = useRef(null);
   const particlesRef = useRef([]);
   const targetsRef = useRef([]);
   const mouseRef = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
   const stepRef = useRef('idle');
-  const bgElementsRef = useRef({ bokeh: [], dataStreams: [] });
+  const bgElementsRef = useRef({ shapes: [], dataStreams: [], stars: [] });
 
   const credits = {
     name: "THANK YOU",
@@ -52,38 +52,46 @@ export default function Slide15Thanks() {
             const isEdge = data[((Math.floor(y)-1) * w + Math.floor(x)) * 4 + 3] < 128 || data[((Math.floor(y)+1) * w + Math.floor(x)) * 4 + 3] < 128 || data[(Math.floor(y) * w + (Math.floor(x)-1)) * 4 + 3] < 128 || data[(Math.floor(y) * w + (Math.floor(x)+1)) * 4 + 3] < 128;
             if (isEdge) {
               edgePts.push({ x, y, isEdge: true });
-            } else if (Math.random() < 0.4) {
+            } else if (Math.random() < 0.35) {
               fillPts.push({ x, y, isEdge: false });
             }
           }
         }
       }
-      // Combine: Ensure edges are handled first, then fill
       return [...edgePts, ...fillPts].slice(0, NUM_PARTICLES);
     };
 
     const setupBG = (w, h) => {
-      const bokeh = Array.from({ length: 40 }).map(() => ({
+      // Create substantial decorative elements
+      const shapes = Array.from({ length: 8 }).map(() => ({
         x: Math.random() * w, y: Math.random() * h,
-        size: Math.random() * 150 + 50,
-        color: Math.random() > 0.5 ? 'rgba(136, 192, 208, 0.05)' : 'rgba(235, 203, 139, 0.04)',
-        vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2
+        size: Math.random() * 400 + 300,
+        opacity: 0.22,
+        vx: (Math.random() - 0.5) * 0.2,
+        rotation: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 0.002
       }));
-      const dataStreams = Array.from({ length: 12 }).map((_, i) => ({
-        x: i < 6 ? (Math.random()*200 + 50) : (w - Math.random()*200 - 50),
+      const dataStreams = Array.from({ length: 14 }).map((_, i) => ({
+        x: i < 7 ? (Math.random()*250 + 20) : (w - Math.random()*250 - 20),
         y: Math.random() * h,
-        speed: 0.3 + Math.random() * 1.5,
-        chars: Array.from({ length: 10 }).map(() => Math.floor(Math.random()*16).toString(16).toUpperCase())
+        speed: 0.2 + Math.random() * 0.8,
+        chars: Array.from({ length: 15 }).map(() => Math.floor(Math.random()*16).toString(16).toUpperCase())
       }));
-      bgElementsRef.current = { bokeh, dataStreams };
+      const stars = Array.from({ length: 260 }).map(() => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: Math.random() * 2.4 + 1.2,
+        alpha: Math.random() * 0.6 + 0.35,
+        tw: Math.random() * Math.PI * 2
+      }));
+      bgElementsRef.current = { shapes, dataStreams, stars };
     };
 
     const initParticles = (w, h, targetPts) => {
       const colorBases = [
         { r: 46, g: 52, b: 64 },   // Nord 0
         { r: 45, g: 109, b: 166 }, // Nord Blue
-        { r: 180, g: 142, b: 173 }, // Nord Purple
-        { r: 208, g: 135, b: 112 }  // Nord Orange
+        { r: 76, g: 86, b: 106 }   // Nord 3
       ];
       return Array.from({ length: NUM_PARTICLES }).map((_, i) => {
         const target = i < targetPts.length ? targetPts[i] : null;
@@ -91,8 +99,8 @@ export default function Slide15Thanks() {
         return {
           x: Math.random() * w, y: Math.random() * h,
           vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2,
-          size: target?.isEdge ? 1.4 : (target ? 2.4 : (Math.random() * 2.5 + 1.0)),
-          alpha: target ? (target.isEdge ? 0.98 : 0.6) : (Math.random() * 0.3 + 0.1),
+          size: target?.isEdge ? 1.6 : (target ? 2.4 : (Math.random() * 2.5 + 1.0)),
+          alpha: target ? (target.isEdge ? 1.0 : 0.75) : (Math.random() * 0.4 + 0.2),
           color: c,
           target: target,
           phase: Math.random() * Math.PI * 2
@@ -120,33 +128,51 @@ export default function Slide15Thanks() {
     const render = (time) => {
       const w = window.innerWidth, h = window.innerHeight;
       const s = stepRef.current;
-      ctx.globalCompositeOperation = 'source-over';
       ctx.clearRect(0, 0, w, h);
 
-      // --- 1. Background Layer ---
+      // --- 1. Background (Gradient + Substantial Shapes) ---
       const grad = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, w);
-      grad.addColorStop(0, '#FFFFFF'); grad.addColorStop(1, '#F5F5F0');
+      grad.addColorStop(0, '#ECEBE4'); grad.addColorStop(1, '#E4E1D8');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
 
-      bgElementsRef.current.bokeh.forEach(b => {
-        b.x += b.vx; b.y += b.vy;
-        if(b.x < -150) b.x = w+150; if(b.x > w+150) b.x = -150;
-        ctx.fillStyle = b.color;
-        ctx.beginPath(); ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+      bgElementsRef.current.stars.forEach(star => {
+        const twinkle = 0.75 + Math.sin(time * 0.002 + star.tw) * 0.25;
+        ctx.fillStyle = `rgba(35, 48, 68, ${star.alpha * twinkle})`;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+        ctx.fill();
       });
 
-      // --- 2. Data Streams ---
-      ctx.font = 'bold 16px ui-monospace, monospace';
+      bgElementsRef.current.shapes.forEach(shape => {
+        shape.x += shape.vx; shape.rotation += shape.rotSpeed;
+        if(shape.x < -500) shape.x = w+500; if(shape.x > w+500) shape.x = -500;
+        ctx.save();
+        ctx.translate(shape.x, shape.y);
+        ctx.rotate(shape.rotation);
+        // Use a much more solid Nord color
+        ctx.fillStyle = `rgba(136, 192, 208, ${shape.opacity})`; 
+        ctx.beginPath(); ctx.rect(-shape.size/2, -shape.size/2, shape.size, shape.size); ctx.fill();
+        // Add a visible border
+        ctx.strokeStyle = `rgba(136, 192, 208, ${Math.min(1, shape.opacity * 1.8)})`;
+        ctx.lineWidth = 2.4;
+        ctx.strokeRect(-shape.size/2, -shape.size/2, shape.size, shape.size);
+        ctx.restore();
+      });
+
+      // --- 2. Data Streams (Highly Visible) ---
+      ctx.font = 'bold 18px ui-monospace, monospace';
       bgElementsRef.current.dataStreams.forEach(stream => {
         stream.y += stream.speed; if(stream.y > h) stream.y = -200;
         stream.chars.forEach((char, idx) => {
-          ctx.fillStyle = `rgba(46, 52, 64, ${0.3 - (idx * 0.02)})`;
-          ctx.fillText(char, stream.x, stream.y + idx*22);
+          // Increase opacity significantly
+          ctx.fillStyle = `rgba(46, 52, 64, ${0.6 - (idx * 0.04)})`; 
+          ctx.fillText(char, stream.x, stream.y + idx*24);
         });
       });
 
-      // --- 3. Interactive Particles ---
+      // --- 3. Dynamic Particles ---
       sm.x += (mouseRef.current.x - sm.x) * 0.12; sm.y += (mouseRef.current.y - sm.y) * 0.12;
 
       particlesRef.current.forEach((p) => {
@@ -182,11 +208,7 @@ export default function Slide15Thanks() {
         }
         p.x += p.vx; p.y += p.vy;
         const renderAlpha = s === 'idle' ? (p.alpha * (0.5 + Math.sin(time*0.003 + p.phase)*0.5)) : p.alpha;
-        let colorStr = `rgba(${p.color.r},${p.color.g},${p.color.b},${renderAlpha})`;
-        if (s === 'crystallize' && p.target && Math.sqrt(p.vx*p.vx + p.vy*p.vy) > 2) {
-          colorStr = `rgba(208, 135, 112, ${renderAlpha})`; 
-        }
-        ctx.fillStyle = colorStr;
+        ctx.fillStyle = `rgba(${p.color.r},${p.color.g},${p.color.b},${renderAlpha})`;
         ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
       });
       animId = requestAnimationFrame(render);
