@@ -1,0 +1,19 @@
+[package]
+name = "brain-slides"
+version = "0.1.0"
+description = "Brain slides (Tauri)"
+authors = ["you"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+[profile.release]
+panic = "abort"
+lto = true
+codegen-units = 1
+strip = true
+
