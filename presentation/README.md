@@ -4,65 +4,109 @@
 
 本项目摒弃了传统的静态 PPT 模式，采用代码生成的动态可视化组件，提供沉浸式的演示体验。
 
-## ✨ 核心特性 (已完成页面)
+## 核心特性 (已完成页面)
 
 ### Slide 01: 沉浸式封面
 *   **粒子大脑系统**: 由 5000+ 个动态粒子构成的 3D 大脑轮廓。
-*   **全局鼠标追踪**: 粒子云随鼠标全屏漂浮，模拟“注视”效果。
-*   **物理交互**: 鼠标悬停产生局部排斥力场，粒子动态避让。
+*   **交互物理**: 全局鼠标追踪与局部排斥力场，赋予封面生命感。
 
-### Slide 02: 动态方法论
-*   **实时波形渲染**: 基于 Canvas 的高性能波形动画，模拟 fMRI 信号与噪声叠加过程。
-*   **高性能架构**: 采用直接 DOM 操作 (Direct DOM Manipulation) 替代 React 状态驱动，消除渲染开销。
-*   **响应式布局**: 波形图高度自适应容器，左右分栏自动对齐，完美填充屏幕。
+### Slide 02: 建模框架
+*   **实时波形渲染**: 基于直接 DOM 操作的高性能波形动画，模拟 fMRI 信号分解过程。
+
+### Slide 03: 理论基础
+*   **核心概念梳理**: 梳理语义编码与脑区表征的关键假设与推导。
 
 ### Slide 04: 深度数据集介绍
-*   **Narratives (The 21st Year)**: 详细展示了数据集的来源、刺激详情（The Moth 播客）及 fMRI 参数。
-*   **可视化声波**: 使用镜像柱状图模拟真实音频播放器的视觉效果。
-*   **长文本滚动**: 提供可交互的文本区域，直观展示自然语言叙事的长上下文特性。
+*   **The 21st Year**: 展示 Narratives 数据集的来源、刺激详情及 fMRI 参数。
+*   **交互可视化**: 包含镜像柱状声波图和可滑动的长文本叙述区域。
 
 ### Slide 05: 特征提取器
-*   **极简主义布局**: 采用完全无容器的开放式设计，信息直接呈现在页面上，风格现代。
-*   **视觉引导**: 使用简洁的垂直分割线对不同模态的模型进行分区。
-*   **垂直居中**: 优化 Flexbox 布局，确保内容在各种屏幕比例下都能优雅地垂直居中。
+*   **极简主义设计**: 采用无容器开放式布局，配合 Nord 风格分割线，展示跨模态模型库（GPT-2, Wav2Vec, Whisper 等）。
 
-### Slide 07: 声学特征提取动画
-*   **扫描与生成**: 通过一个“扫描窗口”划过原始声波，同步在右侧逐列生成特征矩阵，完美展示“过程”。
-*   **状态管理**: 包含“开始”、“处理中”、“完成”和“重置”的完整动画生命周期，方便演示。
-*   **模式切换**: 保留了通过快捷键切换声波（演示/环境声/麦克风）的原始功能。
+### Slide 06: 语义特征工程
+*   **时间轴叙事**: Typing / Lock-on / Extraction / Deposition 四阶段动态演示语义窗口处理流程。
+*   **过程可视化**: 打字输入、窗口锁定、粒子提取、特征沉积完整闭环。
+
+### Slide 07: 声学特征提取
+*   **扫描与生成动画**: 展示“滑动窗口”扫过声波并实时生成特征矩阵的完整动态过程。
+*   **模式切换**: 支持快捷键 (`1`, `2`, `3`, `V`) 实时切换演示、环境声或麦克风信号。
+
+### Slide 08: 文本预测结果
+*   **文本回归对比**: 展示语义特征在皮层预测中的表现与误差分布。
+
+### Slide 09: 声音预测结果
+*   **音频回归对比**: 展示声学特征对脑响应的解释力与区域差异。
+
+### Slide 10: 层级分析
+*   **层级贡献**: 分析不同层级表征的拟合贡献与最优层。
+
+### Slide 11: 功能偏好
+*   **偏好对比**: 对比语义/声学特征在不同脑区的功能偏好。
+
+### Slide 12: 语义地图
+*   **空间映射**: 以投影方式展示语义特征在皮层上的空间分布。
+
+### Slide 13: 声学地图
+*   **空间映射**: 以投影方式展示声学特征在皮层上的空间分布。
+
+### Slide 18: 总结
+*   **结论回顾**: 汇总贡献、结论与后续方向。
+
+### Slide 19: 融合展望
+*   **多模态融合**: 汇聚语义与声学的融合思路与应用方向。
+
+### Slide 15: 终极致谢 (Digital Life)
+*   **液态粒子交互**: “THANK YOU”由 20,000 个粒子物理构成，支持鼠标实时“拨弄”，产生液态涟漪与颜色偏移。
+*   **丰富视觉背景**: 包含动态几何巨构、流动的数据字符流、以及电影级的虚化光斑（Bokeh），彻底解决背景空洞问题。
+*   **极致清晰度**: 采用边缘优先采样算法，确保致谢信息在全屏下依然锐利清晰。
 
 ---
 
-## 🚀 快速开始
+## 快速开始
 
-... (内容与之前相同)
+### 开发环境
+```bash
+npm install
+npm run dev
+```
 
-## 🎮 演示控制
+### 桌面应用 (Tauri)
+```bash
+npm run tauri:dev
+npm run tauri:build
+```
 
-... (内容与之前相同)
+## 演示控制
+*   **切换幻灯片**: `→` / `Space` / `Enter` 下一页；`←` 上一页。
+*   **全屏/退出**: `F11` / `Esc`
+*   **关闭应用**: `Ctrl + Q` 或 `Alt + F4`
 
-## 📂 目录结构
+## 目录结构 (精简版)
 
 ```
 src/
-├── slides/                 # 幻灯片页面组件
-│   ├── Slide01Cover.jsx
-│   ├── Slide02Theory.jsx
-│   ├── Slide03Dataset.jsx
-│   ├── Slide04Methodology.jsx
-│   ├── Slide05FeatureIntro.jsx
-│   ├── Slide06SemanticFeature.jsx
-│   ├── Slide07AcousticFeature.jsx
-│   └── ... (共 15 页)
-├── styles.css              # 全局样式与动画定义
-└── App.jsx                 # 路由与键盘事件管理器
-public/
-...
+├── slides/                      # 幻灯片组件
+│   ├── Slide01Cover.jsx         # 封面
+│   ├── Slide02Methodology.jsx   # 建模框架
+│   ├── Slide03Theory.jsx        # 理论基础
+│   ├── Slide04Dataset.jsx       # 数据集
+│   ├── Slide05FeatureIntro.jsx  # 特征库
+│   ├── Slide06SemanticFeature.jsx # 语义特征工程
+│   ├── Slide07AcousticFeature.jsx # 声学提取动画
+│   ├── Slide08TextResults.jsx   # 文本结果
+│   ├── Slide09AudioResults.jsx  # 音频结果
+│   ├── Slide10LayerAnalysis.jsx # 层级分析
+│   ├── Slide11FunctionalPreference.jsx # 功能偏好
+│   ├── Slide12SemanticMap.jsx   # 语义地图
+│   ├── Slide13AcousticMap.jsx   # 声学地图
+│   ├── Slide18Summary.jsx       # 总结
+│   ├── Slide19Fusion.jsx        # 融合展望
+│   └── Slide15Thanks.jsx        # 终极致谢页
+├── styles.css                   # 全局样式
+└── App.jsx                      # 核心控制器
 ```
 
-## 🛠️ 技术栈
-
-*   **Frontend**: React 18, Vite
-*   **Desktop Shell**: Tauri 2.0 (Rust)
-*   **Visuals**: Canvas API, SVG Direct Manipulation
-*   **Styling**: Inline Styles & Project-specific CSS classes
+## 技术栈
+*   **Visuals**: Canvas API (Slide 1, 4, 15), SVG Direct Manipulation (Slide 2)
+*   **Framework**: React 18, Vite, Tauri 2.0
+*   **Theme**: Nord Color Palette
