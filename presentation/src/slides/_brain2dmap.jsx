@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import pako from 'pako'
 
@@ -71,38 +71,13 @@ function decodeRgbToId(r, g, b) {
   return r + (g << 8) + (b << 16)
 }
 
-function hslToRgb(h, s, l) {
-  const c = (1 - Math.abs(2 * l - 1)) * s
-  const hp = h / 60
-  const x = c * (1 - Math.abs((hp % 2) - 1))
-  let r1 = 0
-  let g1 = 0
-  let b1 = 0
-  if (hp >= 0 && hp < 1) [r1, g1, b1] = [c, x, 0]
-  else if (hp >= 1 && hp < 2) [r1, g1, b1] = [x, c, 0]
-  else if (hp >= 2 && hp < 3) [r1, g1, b1] = [0, c, x]
-  else if (hp >= 3 && hp < 4) [r1, g1, b1] = [0, x, c]
-  else if (hp >= 4 && hp < 5) [r1, g1, b1] = [x, 0, c]
-  else if (hp >= 5 && hp < 6) [r1, g1, b1] = [c, 0, x]
-  const m = l - c / 2
-  return [r1 + m, g1 + m, b1 + m]
-}
-
 function roiBaseColor(id) {
   if (!id) return [0.84, 0.82, 0.78]
-  const t = (id * 0.1337) % 1
-  const blue = [0.176, 0.427, 0.651]
-  const orange = [0.85, 0.54, 0.17]
-  const mixed = [
-    blue[0] * (1 - t) + orange[0] * t,
-    blue[1] * (1 - t) + orange[1] * t,
-    blue[2] * (1 - t) + orange[2] * t,
-  ]
-  const lift = 0.12
-  return mixed.map((c) => c * (1 - lift) + lift)
+  // Keep the base map clean: do not color every ROI by default.
+  return [0.84, 0.82, 0.78]
 }
 
-function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover }) {
+export function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover, ariaLabel = 'ROI map' }) {
   const canvasRef = useRef(null)
   const rendererRef = useRef(null)
   const sceneRef = useRef(null)
@@ -110,17 +85,25 @@ function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover }) {
   const cameraRef = useRef(null)
   const meshRef = useRef(null)
   const pickMeshRef = useRef(null)
+  const outlineRef = useRef(null)
   const pickTargetRef = useRef(null)
   const fitRef = useRef(null)
   const selectedRef = useRef(null)
   const hoverRef = useRef(null)
 
-  const [loadState, setLoadState] = useState({ loading: true, error: null })
+  const [error, setError] = useState(null)
 
   const errorOverlay = useMemo(() => {
-    if (!loadState.error) return null
-    return { t: '加载失败', m: loadState.error }
-  }, [loadState.error])
+    if (!error) return null
+    return (
+      <div className="overlay">
+        <div className="box">
+          <div className="title">加载失败</div>
+          <div className="msg">{error}</div>
+        </div>
+      </div>
+    )
+  }, [error])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -131,7 +114,7 @@ function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover }) {
     rendererRef.current = renderer
 
     const scene = new THREE.Scene()
-    scene.background = new THREE.Color(0xf5f5f0)
+    scene.background = null
     sceneRef.current = scene
 
     const pickScene = new THREE.Scene()
@@ -180,6 +163,8 @@ function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover }) {
       renderer.render(scene, camera)
     }
 
+    const ro = new ResizeObserver(resize)
+    ro.observe(canvas)
     window.addEventListener('resize', resize)
     resize()
     animate()
@@ -187,7 +172,10 @@ function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover }) {
     return () => {
       cancelAnimationFrame(raf)
       window.removeEventListener('resize', resize)
+      ro.disconnect()
       pickTargetRef.current?.dispose?.()
+      outlineRef.current?.geometry?.dispose?.()
+      outlineRef.current?.material?.dispose?.()
       renderer.dispose()
     }
   }, [])
@@ -196,7 +184,7 @@ function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover }) {
     let canceled = false
 
     async function load() {
-      setLoadState({ loading: true, error: null })
+      setError(null)
       try {
         const [surfResp, labelResp] = await Promise.all([fetch(surfaceUrl), fetch(labelUrl)])
         if (!surfResp.ok) throw new Error('表面文件加载失败：HTTP ' + surfResp.status)
@@ -209,7 +197,6 @@ function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover }) {
         if (labels.length !== vertices.length / 3) {
           throw new Error(`标签长度(${labels.length})与顶点数(${vertices.length / 3})不一致，无法一一对应`)
         }
-
         if (canceled) return
 
         const geom = new THREE.BufferGeometry()
@@ -230,7 +217,7 @@ function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover }) {
         }
         geom.setAttribute('color', new THREE.BufferAttribute(colors, 3))
 
-        const mesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide }))
+        const mesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: true }))
         mesh.userData.base = base
 
         const pickGeom = geom.clone()
@@ -245,10 +232,52 @@ function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover }) {
         pickGeom.setAttribute('color', new THREE.BufferAttribute(pickColors, 3, true))
         const pickMesh = new THREE.Mesh(pickGeom, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide }))
 
+        // Build ROI boundary outlines: edges where adjacent vertices have different labels.
+        const edges = new Set()
+        const idx = triangles
+        const pos = vertices
+        const positions = []
+        const pushEdge = (a, b) => {
+          const min = a < b ? a : b
+          const max = a < b ? b : a
+          const key = (min << 16) | max
+          if (edges.has(key)) return
+          edges.add(key)
+          const ax = pos[min * 3]
+          const ay = pos[min * 3 + 1]
+          const az = pos[min * 3 + 2]
+          const bx = pos[max * 3]
+          const by = pos[max * 3 + 1]
+          const bz = pos[max * 3 + 2]
+          positions.push(ax, ay, az, bx, by, bz)
+        }
+        for (let t = 0; t < idx.length; t += 3) {
+          const a = idx[t]
+          const b = idx[t + 1]
+          const c = idx[t + 2]
+          const la = labels[a]
+          const lb = labels[b]
+          const lc = labels[c]
+          if (la !== lb) pushEdge(a, b)
+          if (lb !== lc) pushEdge(b, c)
+          if (lc !== la) pushEdge(c, a)
+        }
+        const outlineGeom = new THREE.BufferGeometry()
+        outlineGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3))
+        const outlineMat = new THREE.LineBasicMaterial({
+          color: 0x233044,
+          transparent: true,
+          opacity: 0.22,
+          depthTest: true,
+          depthWrite: false,
+        })
+        const outline = new THREE.LineSegments(outlineGeom, outlineMat)
+
         const scene = sceneRef.current
         const pickScene = pickSceneRef.current
         const old = meshRef.current
         const oldPick = pickMeshRef.current
+        const oldOutline = outlineRef.current
         if (old) {
           scene.remove(old)
           old.geometry.dispose()
@@ -259,13 +288,19 @@ function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover }) {
           oldPick.geometry.dispose()
           oldPick.material.dispose()
         }
+        if (oldOutline) {
+          scene.remove(oldOutline)
+          oldOutline.geometry.dispose()
+          oldOutline.material.dispose()
+        }
 
         scene.add(mesh)
+        scene.add(outline)
         pickScene.add(pickMesh)
         meshRef.current = mesh
         pickMeshRef.current = pickMesh
+        outlineRef.current = outline
 
-        // Fixed lateral view
         const box = new THREE.Box3().setFromObject(mesh)
         const size = new THREE.Vector3()
         const center = new THREE.Vector3()
@@ -275,7 +310,6 @@ function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover }) {
         const max = box.max
         const maxDim = Math.max(size.x, size.y, size.z)
         const camera = cameraRef.current
-        // Classic lateral silhouette: look along X, Z is up.
         camera.up.set(0, 0, 1)
         const isLeft = center.x < 0
         const outerX = isLeft ? min.x : max.x
@@ -286,7 +320,6 @@ function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover }) {
         camera.far = d + maxDim * 10
 
         fitRef.current = { halfY: size.y / 2, halfZ: size.z / 2 }
-        // Update orthographic frustum to fit mesh in view
         const canvas = canvasRef.current
         if (canvas) {
           const aspect = canvas.clientWidth / Math.max(canvas.clientHeight, 1)
@@ -305,13 +338,11 @@ function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover }) {
         mesh.userData.labels = labels
         selectedRef.current = null
         hoverRef.current = null
-
         onSelect?.(null)
         onHover?.(null)
-        setLoadState({ loading: false, error: null })
       } catch (e) {
         if (canceled) return
-        setLoadState({ loading: false, error: e?.message || String(e) })
+        setError(e?.message || String(e))
       }
     }
 
@@ -319,9 +350,9 @@ function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover }) {
     return () => {
       canceled = true
     }
-  }, [surfaceUrl, labelUrl, onSelect, onHover])
+  }, [surfaceUrl, labelUrl, onHover, onSelect])
 
-  function recolor(selectedId) {
+  const applyHighlight = (selectedId, hoverId) => {
     const mesh = meshRef.current
     if (!mesh) return
 
@@ -330,107 +361,82 @@ function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover }) {
     const base = mesh.userData.base
 
     for (let i = 0; i < labels.length; i++) {
-      const isSelected = selectedId != null && labels[i] === selectedId
-      const isHover = hoverRef.current != null && labels[i] === hoverRef.current
-      if (isSelected) {
-        colors.setXYZ(i, 0.85, 0.54, 0.17)
-      } else if (isHover && selectedId == null) {
-        colors.setXYZ(i, 0.92, 0.7, 0.32)
-      } else {
-        const r = base[i * 3]
-        const g = base[i * 3 + 1]
-        const b = base[i * 3 + 2]
-        if (selectedId != null) colors.setXYZ(i, r * 0.25, g * 0.25, b * 0.25)
-        else colors.setXYZ(i, r, g, b)
+      const id = labels[i]
+      const idx = i * 3
+      let r = base[idx]
+      let g = base[idx + 1]
+      let b = base[idx + 2]
+      if (hoverId != null && id === hoverId && selectedId == null) {
+        r = Math.min(1, r + 0.12)
+        g = Math.min(1, g + 0.12)
+        b = Math.min(1, b + 0.12)
       }
+      if (selectedId != null && id === selectedId) {
+        r = Math.min(1, r + 0.35)
+        g = Math.min(1, g + 0.35)
+        b = Math.min(1, b + 0.35)
+      }
+      colors.setXYZ(i, r, g, b)
     }
     colors.needsUpdate = true
   }
 
-  function pickRoiAt(clientX, clientY) {
+  const pickRoiAt = (clientX, clientY) => {
     const renderer = rendererRef.current
     const camera = cameraRef.current
     const pickScene = pickSceneRef.current
-    const pickTarget = pickTargetRef.current
+    const target = pickTargetRef.current
     const canvas = canvasRef.current
-    if (!renderer || !camera || !pickScene || !pickTarget || !canvas) return null
+    if (!renderer || !camera || !pickScene || !target || !canvas) return null
 
     const rect = canvas.getBoundingClientRect()
-    const x = Math.floor(((clientX - rect.left) / rect.width) * pickTarget.width)
-    const y = Math.floor((1 - (clientY - rect.top) / rect.height) * pickTarget.height)
+    const x = Math.floor(((clientX - rect.left) / rect.width) * target.width)
+    const y = Math.floor((1 - (clientY - rect.top) / rect.height) * target.height)
 
-    renderer.setRenderTarget(pickTarget)
+    renderer.setRenderTarget(target)
     renderer.render(pickScene, camera)
     renderer.setRenderTarget(null)
 
     const pixel = new Uint8Array(4)
-    renderer.readRenderTargetPixels(pickTarget, x, y, 1, 1, pixel)
+    renderer.readRenderTargetPixels(target, x, y, 1, 1, pixel)
     const id = decodeRgbToId(pixel[0], pixel[1], pixel[2])
     return id === 0 ? null : id
   }
 
-  function onClick(e) {
-    if (overlay) return
+  const onClick = (e) => {
     const id = pickRoiAt(e.clientX, e.clientY)
     selectedRef.current = id
     onSelect?.(id)
-    recolor(id)
+    applyHighlight(selectedRef.current, hoverRef.current)
   }
 
-  function onMove(e) {
-    if (overlay) return
+  const onMove = (e) => {
     const id = pickRoiAt(e.clientX, e.clientY)
     if (id !== hoverRef.current) {
       hoverRef.current = id
       onHover?.(id)
-      recolor(selectedRef.current)
+      applyHighlight(selectedRef.current, hoverRef.current)
     }
   }
 
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        selectedRef.current = null
+        onSelect?.(null)
+        applyHighlight(selectedRef.current, hoverRef.current)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onSelect])
+
   return (
     <>
-      <div className="slideCanvas">
+      <div className="slideCanvas" aria-label={ariaLabel}>
         <canvas ref={canvasRef} className="canvas" onClick={onClick} onMouseMove={onMove} />
       </div>
-      {errorOverlay ? (
-        <div className="overlay">
-          <div className="box">
-            <div className="title">{errorOverlay.t}</div>
-            <div className="msg">{errorOverlay.m}</div>
-          </div>
-        </div>
-      ) : null}
+      {errorOverlay}
     </>
   )
 }
-
-export default function Slide17SemanticModel() {
-  const title = '语义 ROI 交互地图（Pial）'
-
-  return (
-    <div className="deck">
-      <div className="slide nordSlide">
-        <div className="nordAurora" aria-hidden="true">
-          <div className="nordGlow nordGlowA" />
-          <div className="nordGlow nordGlowB" />
-        </div>
-
-        <Brain2DMap surfaceUrl="/atlas/tpl-fsaverage_den-41k_hemi-L_pial.surf.gii" labelUrl="/atlas/tpl-fsaverage6_hemi-L_desc-MMP_dseg.label.gii" />
-
-        <div className="nordContent" style={{ justifyContent: 'flex-start', paddingTop: 54 }}>
-          <div data-stagger="" style={{ ...{ '--stagger-delay': '0ms' }, fontSize: 56, fontWeight: 950, letterSpacing: '-0.02em', lineHeight: 1.05 }}>
-            {title}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-
-
-
-
-
-
-
