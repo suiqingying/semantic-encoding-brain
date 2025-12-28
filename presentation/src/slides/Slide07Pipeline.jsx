@@ -1,4 +1,4 @@
-import { COLORS, NordSlide, Title } from './_nord'
+﻿import { COLORS, NordSlide, Title } from './_nord'
 
 export default function Slide07Pipeline() {
   const steps = ['Input Stimulus', 'Feature Extract', 'Downsample', 'Ridge Regression', 'Pearson r']
@@ -6,7 +6,7 @@ export default function Slide07Pipeline() {
     <NordSlide>
       <Title stagger={0}>编码模型管线</Title>
       <div data-stagger="" style={{ ...{ '--stagger-delay': '400ms' }, position: 'relative', marginTop: 56, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', height: 6, background: 'rgba(255,255,255,0.10)', borderRadius: 999 }} />
+        <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', height: 6, background: 'rgba(35,48,68,0.12)', borderRadius: 999 }} />
         {steps.map((step, i) => (
           <div key={step} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 10px', zIndex: 1 }}>
             <div

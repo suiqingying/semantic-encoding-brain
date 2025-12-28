@@ -1,4 +1,4 @@
-import { COLORS, NordSlide, Text, Title } from './_nord'
+﻿import { COLORS, NordSlide, Text, Title } from './_nord'
 
 function Bolt() {
   return (
@@ -14,7 +14,7 @@ export default function Slide22Fusion() {
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
         <div style={{ position: 'relative', marginBottom: 18 }}>
           <Bolt />
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(235,203,139,0.40)', filter: 'blur(40px)', zIndex: -1 }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(217,138,44,0.40)', filter: 'blur(40px)', zIndex: -1 }} />
         </div>
         <Title>融合与超越</Title>
         <div style={{ maxWidth: 980, marginTop: 16 }}>

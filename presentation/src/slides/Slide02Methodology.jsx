@@ -1,4 +1,4 @@
-import { Card, COLORS, NordSlide, SubTitle, Text, Title } from './_nord'
+﻿import { Card, COLORS, NordSlide, SubTitle, Text, Title } from './_nord'
 
 export default function Slide02Methodology() {
   return (
@@ -28,22 +28,22 @@ export default function Slide02Methodology() {
               </div>
               <div
                 style={{
-                  background: 'rgba(0,0,0,0.20)',
+                  background: 'rgba(255,255,255,0.72)',
                   padding: 14,
                   borderRadius: 12,
                   fontFamily: 'Georgia, serif',
                   fontStyle: 'italic',
                   textAlign: 'center',
                   fontSize: 22,
-                  color: 'rgba(255,255,255,0.70)',
+                  color: 'rgba(35,48,68,0.75)',
                 }}
               >
-                y = β₀ + β₁X₁ + … + ε
+                y = b0 + b1 X + ... + e
               </div>
               <div style={{ marginTop: 10, opacity: 0.55, fontSize: 13, textAlign: 'right' }}>Simple Scalar Mapping</div>
             </Card>
 
-            <div style={{ display: 'flex', justifyContent: 'center', opacity: 0.2, fontSize: 18 }}>↓</div>
+            <div style={{ display: 'flex', justifyContent: 'center', opacity: 0.35, fontSize: 18 }}>-&gt;</div>
 
             <Card style={{ borderLeft: `6px solid ${COLORS.success}`, padding: 22 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -60,17 +60,17 @@ export default function Slide02Methodology() {
               </div>
 
               <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <div style={{ flex: 1, padding: 10, borderRadius: 10, background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                <div style={{ flex: 1, padding: 10, borderRadius: 10, background: 'rgba(255,255,255,0.76)', border: '1px solid rgba(35,48,68,0.12)' }}>
                   <div style={{ opacity: 0.55, fontSize: 11, letterSpacing: '0.12em' }}>INPUT</div>
                   <div style={{ marginTop: 6, fontSize: 16 }}>Stimulus</div>
                 </div>
-                <div style={{ opacity: 0.35 }}>→</div>
-                <div style={{ flex: 1.2, padding: 10, borderRadius: 10, background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                <div style={{ opacity: 0.35 }}>-&gt;</div>
+                <div style={{ flex: 1.2, padding: 10, borderRadius: 10, background: 'rgba(255,255,255,0.76)', border: '1px solid rgba(35,48,68,0.12)' }}>
                   <div style={{ opacity: 0.55, fontSize: 11, letterSpacing: '0.12em' }}>FEATURES</div>
                   <div style={{ marginTop: 6, fontSize: 16 }}>High-D</div>
                 </div>
-                <div style={{ opacity: 0.35 }}>→</div>
-                <div style={{ flex: 1, padding: 10, borderRadius: 10, background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                <div style={{ opacity: 0.35 }}>-&gt;</div>
+                <div style={{ flex: 1, padding: 10, borderRadius: 10, background: 'rgba(255,255,255,0.76)', border: '1px solid rgba(35,48,68,0.12)' }}>
                   <div style={{ opacity: 0.55, fontSize: 11, letterSpacing: '0.12em' }}>OUTPUT</div>
                   <div style={{ marginTop: 6, fontSize: 16 }}>BOLD</div>
                 </div>

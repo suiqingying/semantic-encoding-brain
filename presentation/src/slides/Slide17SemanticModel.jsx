@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import pako from 'pako'
 
@@ -89,9 +89,17 @@ function hslToRgb(h, s, l) {
 }
 
 function roiBaseColor(id) {
-  if (!id) return [0.10, 0.12, 0.16]
-  const hue = (id * 137.508) % 360
-  return hslToRgb(hue, 0.55, 0.52)
+  if (!id) return [0.84, 0.82, 0.78]
+  const t = (id * 0.1337) % 1
+  const blue = [0.176, 0.427, 0.651]
+  const orange = [0.85, 0.54, 0.17]
+  const mixed = [
+    blue[0] * (1 - t) + orange[0] * t,
+    blue[1] * (1 - t) + orange[1] * t,
+    blue[2] * (1 - t) + orange[2] * t,
+  ]
+  const lift = 0.12
+  return mixed.map((c) => c * (1 - lift) + lift)
 }
 
 function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover }) {
@@ -123,7 +131,7 @@ function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover }) {
     rendererRef.current = renderer
 
     const scene = new THREE.Scene()
-    scene.background = new THREE.Color(0x2e3440)
+    scene.background = new THREE.Color(0xf5f5f0)
     sceneRef.current = scene
 
     const pickScene = new THREE.Scene()
@@ -325,9 +333,9 @@ function Brain2DMap({ surfaceUrl, labelUrl, onSelect, onHover }) {
       const isSelected = selectedId != null && labels[i] === selectedId
       const isHover = hoverRef.current != null && labels[i] === hoverRef.current
       if (isSelected) {
-        colors.setXYZ(i, 1.0, 0.78, 0.18)
+        colors.setXYZ(i, 0.85, 0.54, 0.17)
       } else if (isHover && selectedId == null) {
-        colors.setXYZ(i, 1.0, 0.92, 0.35)
+        colors.setXYZ(i, 0.92, 0.7, 0.32)
       } else {
         const r = base[i * 3]
         const g = base[i * 3 + 1]
@@ -418,3 +426,11 @@ export default function Slide17SemanticModel() {
     </div>
   )
 }
+
+
+
+
+
+
+
+

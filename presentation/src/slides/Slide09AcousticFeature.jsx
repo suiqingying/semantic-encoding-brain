@@ -1,4 +1,4 @@
-import { Card, COLORS, NordSlide, Text, Title } from './_nord'
+﻿import { Card, COLORS, NordSlide, Text, Title } from './_nord'
 import Waveform from './_waveform'
 import { useEffect, useState } from 'react'
 import WavingRow from './_waving'
@@ -55,11 +55,11 @@ export default function Slide09AcousticFeature() {
           </ul>
         </div>
 
-        <Card style={{ padding: 18, background: 'rgba(0,0,0,0.22)', borderColor: 'rgba(255,255,255,0.10)' }}>
+        <Card style={{ padding: 18, background: 'rgba(255,255,255,0.72)', borderColor: 'rgba(35,48,68,0.12)' }}>
           <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, opacity: 0.72, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
             Live Acoustic Visualization
           </div>
-          <div style={{ height: 260, marginTop: 12, borderRadius: 16, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+          <div style={{ height: 260, marginTop: 12, borderRadius: 16, background: 'rgba(255,255,255,0.72)', border: '1px solid rgba(35,48,68,0.12)', overflow: 'hidden' }}>
             {mode === 'demo' ? (
               <WavingRow color={COLORS.success} />
             ) : (

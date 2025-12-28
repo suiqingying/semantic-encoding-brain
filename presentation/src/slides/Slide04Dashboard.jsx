@@ -1,4 +1,4 @@
-import { Card, COLORS, NordSlide, Title } from './_nord'
+﻿import { Card, COLORS, NordSlide, Title } from './_nord'
 
 function BadgeIcon({ color, label }) {
   return (
@@ -38,14 +38,11 @@ export default function Slide04Dashboard() {
           <Card key={item.title} style={{ padding: 22, height: 320, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <BadgeIcon color={item.color} label={item.label} />
             <div>
-              <div style={{ fontSize: 28, fontWeight: 900, marginBottom: 10 }}>{item.title}</div>
-              <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 14, opacity: 0.65, color: COLORS.textDim }}>{item.sub}</div>
+              <div style={{ fontSize: 22, fontWeight: 900, marginBottom: 8 }}>{item.title}</div>
+              <div style={{ fontSize: 15, opacity: 0.7, color: COLORS.textDim }}>{item.sub}</div>
             </div>
           </Card>
         ))}
-      </div>
-      <div style={{ marginTop: 20, opacity: 0.6 }} className="nordText">
-        本研究通过四个核心模块，系统性地探究听觉故事在大脑中的加工与整合模式。
       </div>
     </NordSlide>
   )

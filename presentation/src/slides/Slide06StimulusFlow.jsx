@@ -1,4 +1,4 @@
-import { Card, COLORS, NordSlide, Text, Title } from './_nord'
+﻿import { COLORS, NordSlide, Text, Title } from './_nord'
 import Waveform from './_waveform'
 
 export default function Slide06StimulusFlow() {
@@ -12,7 +12,7 @@ export default function Slide06StimulusFlow() {
             <div style={{ fontSize: 18, fontWeight: 900 }}>Audio Stream</div>
           </div>
 
-          <div style={{ position: 'relative', height: 1, background: 'rgba(255,255,255,0.20)' }}>
+          <div style={{ position: 'relative', height: 1, background: 'rgba(35,48,68,0.18)' }}>
             <div
               style={{
                 position: 'absolute',
@@ -21,8 +21,8 @@ export default function Slide06StimulusFlow() {
                 transform: 'translate(-50%,-50%)',
                 padding: '10px 14px',
                 borderRadius: 10,
-                background: 'rgba(0,0,0,0.20)',
-                border: '1px solid rgba(255,255,255,0.20)',
+                background: 'rgba(255,255,255,0.72)',
+                border: '1px solid rgba(35,48,68,0.12)',
                 fontFamily: 'ui-monospace, monospace',
                 fontSize: 13,
               }}

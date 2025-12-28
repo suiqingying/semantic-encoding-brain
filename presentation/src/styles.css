@@ -1,19 +1,19 @@
-:root{
-  --bg:#0b0f19;
-  --text:#e8ecff;
-  --muted:#a7b0cf;
-  --line:rgba(255,255,255,0.10);
-  --card:rgba(255,255,255,0.04);
-  --btn:rgba(255,255,255,0.06);
-  --btnHover:rgba(255,255,255,0.10);
-  --accent:#9ad2ff;
+﻿:root{
+  --bg:#f5f5f0;
+  --text:#233044;
+  --muted:#4b5a6b;
+  --line:rgba(35,48,68,0.12);
+  --card:rgba(255,255,255,0.65);
+  --btn:rgba(35,48,68,0.06);
+  --btnHover:rgba(35,48,68,0.10);
+  --accent:#2d6da6;
 }
 
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;background:#000;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"PingFang SC","Microsoft YaHei",sans-serif}
+body{margin:0;background:#f5f5f0;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"PingFang SC","Microsoft YaHei",sans-serif}
 
-.stage{height:100vh;width:100vw;position:relative;overflow:hidden;background:#000}
+.stage{height:100vh;width:100vw;position:relative;overflow:hidden;background:#f5f5f0}
 .stageInner{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(var(--scale));will-change:transform}
 
 .deck{width:1366px;height:768px;display:block}
@@ -22,7 +22,7 @@ body{margin:0;background:#000;color:var(--text);font-family:system-ui,-apple-sys
   height: 100%;
   border-radius: 0;
   border: 0;
-  background: #2e3440;
+  background: #f5f5f0;
   box-shadow: none;
   overflow: hidden;
   position: relative;
@@ -33,14 +33,14 @@ body{margin:0;background:#000;color:var(--text);font-family:system-ui,-apple-sys
 .canvas{width:100%;height:100%;display:block}
 
 .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-.overlay .box{pointer-events:auto;max-width:520px;margin:18px;padding:14px 16px;border-radius:18px;border:1px solid rgba(255,255,255,0.10);background:rgba(10,14,24,0.78);backdrop-filter:blur(8px)}
+.overlay .box{pointer-events:auto;max-width:520px;margin:18px;padding:14px 16px;border-radius:18px;border:1px solid rgba(35,48,68,0.12);background:rgba(255,255,255,0.78);backdrop-filter:blur(8px)}
 .overlay .title{font-weight:900;margin-bottom:6px}
-.overlay .msg{color:#cbd2ea;font-size:13px;line-height:1.55}
+.overlay .msg{color:#4b5a6b;font-size:13px;line-height:1.55}
 
 /* Nord deck (template-driven slides) */
 .nordSlide{
-  background: #2e3440;
-  color: #eceff4;
+  background: #f5f5f0;
+  color: #233044;
   font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"PingFang SC","Microsoft YaHei",sans-serif;
 }
 
@@ -57,8 +57,8 @@ body{margin:0;background:#000;color:var(--text);font-family:system-ui,-apple-sys
 
 .nordAurora{position:absolute;inset:0;pointer-events:none;z-index:0}
 .nordGlow{position:absolute;border-radius:9999px;filter:blur(120px);opacity:.18}
-.nordGlowA{top:-18%;left:-10%;width:52%;height:52%;background:#5e81ac}
-.nordGlowB{bottom:10%;right:-10%;width:62%;height:62%;background:#88c0d0;opacity:.10}
+.nordGlowA{top:-18%;left:-10%;width:52%;height:52%;background:#2d6da6;opacity:.14}
+.nordGlowB{bottom:10%;right:-10%;width:62%;height:62%;background:#d98a2c;opacity:.12}
 
 @media (prefers-reduced-motion: no-preference){
   .nordGlowA{animation:nordBreatheA 20s ease-in-out infinite}
@@ -79,9 +79,9 @@ body{margin:0;background:#000;color:var(--text);font-family:system-ui,-apple-sys
 
 /* Keyword hierarchy */
 .kw{font-weight:900}
-.kwA{color:#88c0d0}
-.kwG{color:#a3be8c}
-.kwY{color:#ebcb8b}
+.kwA{color:#2d6da6}
+.kwG{color:#2d6da6}
+.kwY{color:#d98a2c}
 
 .nordContent{
   position:relative;
@@ -107,7 +107,7 @@ body{margin:0;background:#000;color:var(--text);font-family:system-ui,-apple-sys
   margin:0 0 24px;
   font-size:28px;
   font-weight:300;
-  color:#81a1c1;
+  color:#2d6da6;
 }
 
 .nordText{
@@ -115,17 +115,17 @@ body{margin:0;background:#000;color:var(--text);font-family:system-ui,-apple-sys
   font-size:26px;
   line-height:1.55;
   font-weight:300;
-  color:#d8dee9;
+  color:#4b5a6b;
   opacity:.92;
 }
 
 .nordCard{
   position: relative;
   border-radius:18px;
-  border: 1px solid rgba(94,129,172,0.25);
-  background: rgba(59,66,82,0.60);
+  border: 1px solid rgba(45,109,166,0.2);
+  background: rgba(255,255,255,0.7);
   backdrop-filter: blur(10px);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+  box-shadow: 0 12px 30px rgba(45,48,68,0.12);
 }
 .nordCard::before{
   content:"";
@@ -147,15 +147,15 @@ body{margin:0;background:#000;color:var(--text);font-family:system-ui,-apple-sys
   margin-left: -12px;
   margin-right: -12px;
   border-radius: 14px;
-  border: 1px dashed rgba(163,190,140,0.55);
-  background: rgba(163,190,140,0.06);
+  border: 1px dashed rgba(217,138,44,0.6);
+  background: rgba(217,138,44,0.08);
 }
 .nordChartNote{
   padding: 4px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(163,190,140,0.55);
-  background: rgba(163,190,140,0.10);
-  color: #a3be8c;
+  border: 1px solid rgba(217,138,44,0.6);
+  background: rgba(217,138,44,0.12);
+  color: #a65a1e;
   font-weight: 900;
   font-size: 11px;
   letter-spacing: .10em;
@@ -174,13 +174,13 @@ body{margin:0;background:#000;color:var(--text);font-family:system-ui,-apple-sys
   width:100%;
   border-radius:999px;
   overflow:hidden;
-  background: rgba(0,0,0,0.30);
-  border:1px solid rgba(255,255,255,0.08);
+  background: rgba(35,48,68,0.08);
+  border:1px solid rgba(35,48,68,0.12);
 }
 .nordChartFill{height:100%;border-radius:999px;transition:width 800ms cubic-bezier(.22,.95,.27,.99)}
 .nordChartRowHighlight .nordChartFill{
-  box-shadow: 0 0 18px var(--fill-color, rgba(136,192,208,0.85));
-  filter: drop-shadow(0 0 12px var(--fill-color, rgba(136,192,208,0.65)));
+  box-shadow: 0 0 18px var(--fill-color, rgba(45,109,166,0.85));
+  filter: drop-shadow(0 0 12px var(--fill-color, rgba(45,109,166,0.65)));
 }
 
 @media (prefers-reduced-motion: reduce){
@@ -194,12 +194,12 @@ body{margin:0;background:#000;color:var(--text);font-family:system-ui,-apple-sys
   align-items:center;
   gap:8px;
   padding: 10px 12px 6px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(35,48,68,0.08);
 }
 .dotRed,.dotYellow,.dotGreen{width:10px;height:10px;border-radius:999px}
-.dotRed{background:#bf616a}
-.dotYellow{background:#ebcb8b}
-.dotGreen{background:#a3be8c}
+.dotRed{background:#a65a1e}
+.dotYellow{background:#d98a2c}
+.dotGreen{background:#2d6da6}
 .terminalBody{padding:14px 16px 16px}
 
 .nordDotItem{display:flex;align-items:center;gap:14px}
@@ -241,7 +241,8 @@ body{margin:0;background:#000;color:var(--text);font-family:system-ui,-apple-sys
 }
 
 /* Micro progress bar */
-.microProgress{position:absolute;left:0;right:0;bottom:0;height:2px;background:rgba(255,255,255,0.10)}
-.microProgressFill{height:100%;width:0;background:#88c0d0;transition:width 420ms ease}
+.microProgress{position:absolute;left:0;right:0;bottom:0;height:2px;background:rgba(35,48,68,0.12)}
+.microProgressFill{height:100%;width:0;background:#2d6da6;transition:width 420ms ease}
 
 .waveCanvas{width:100%;height:100%;display:block}
+

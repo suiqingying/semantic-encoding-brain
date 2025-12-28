@@ -1,4 +1,4 @@
-import { Card, COLORS, NordSlide, Text, Title } from './_nord'
+﻿import { Card, COLORS, NordSlide, Text, Title } from './_nord'
 
 export default function Slide21Summary() {
   return (

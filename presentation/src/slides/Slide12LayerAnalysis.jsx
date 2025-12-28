@@ -1,4 +1,4 @@
-import { COLORS, NordSlide, Text, Title } from './_nord'
+﻿import { COLORS, NordSlide, Text, Title } from './_nord'
 
 export default function Slide12LayerAnalysis() {
   return (
@@ -10,10 +10,10 @@ export default function Slide12LayerAnalysis() {
           height: 280,
           width: '100%',
           marginTop: 30,
-          background: 'rgba(0,0,0,0.20)',
+          background: 'rgba(255,255,255,0.72)',
           borderRadius: 18,
           overflow: 'hidden',
-          border: '1px solid rgba(255,255,255,0.08)',
+          border: '1px solid rgba(35,48,68,0.12)',
         }}
       >
         <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} preserveAspectRatio="none">
@@ -31,4 +31,3 @@ export default function Slide12LayerAnalysis() {
     </NordSlide>
   )
 }
-

@@ -1,4 +1,4 @@
-import { COLORS, NordSlide, Title } from './_nord'
+﻿import { COLORS, NordSlide, Title } from './_nord'
 
 export default function Slide19LayerBest() {
   const hs = [20, 40, 60, 85, 95, 80, 60, 40, 30]

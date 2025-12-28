@@ -1,4 +1,4 @@
-import { Card, COLORS, DotItem, NordSlide, Text, Title } from './_nord'
+﻿import { Card, COLORS, DotItem, NordSlide, Text, Title } from './_nord'
 
 export default function Slide08SemanticFeature() {
   return (
@@ -15,7 +15,7 @@ export default function Slide08SemanticFeature() {
           </ul>
         </div>
 
-        <Card style={{ background: 'rgba(0,0,0,0.28)', borderColor: 'rgba(255,255,255,0.10)', overflow: 'hidden' }}>
+        <Card style={{ background: 'rgba(255,255,255,0.76)', borderColor: 'rgba(35,48,68,0.12)', overflow: 'hidden' }}>
           <div className="terminalBar" aria-hidden="true">
             <span className="dotRed" />
             <span className="dotYellow" />
@@ -25,7 +25,7 @@ export default function Slide08SemanticFeature() {
             <span style={{ color: COLORS.purple }}>const</span> <span style={{ color: COLORS.accent1 }}>embedding</span> ={' '}
             <span style={{ color: COLORS.success }}>model</span>.encode(
             <br />
-            &nbsp;&nbsp;<span style={{ color: COLORS.warning }}>"...the first time I saw her..."</span>,
+            &nbsp;&nbsp;<span style={{ color: COLORS.warning }}>'...the first time I saw her...'</span>,
             <br />
             &nbsp;&nbsp;{'{'} context_window: <span style={{ color: COLORS.error }}>200</span> {'}'}
             <br />

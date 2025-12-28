@@ -13,7 +13,7 @@ function setupCanvasSize(canvas, width, height, dpr) {
 }
 
 export default function Waveform({
-  color = '#88c0d0',
+  color = '#2d6da6',
   background = 'transparent',
   opacity = 0.95,
   live = true,

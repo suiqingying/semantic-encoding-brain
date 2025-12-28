@@ -1,4 +1,4 @@
-import { Card, COLORS, NordSlide, Text, Title } from './_nord'
+﻿import { Card, COLORS, NordSlide, Text, Title } from './_nord'
 
 function BigBadge({ color, label }) {
   return (
@@ -42,4 +42,3 @@ export default function Slide14FunctionalPreference() {
     </NordSlide>
   )
 }
-

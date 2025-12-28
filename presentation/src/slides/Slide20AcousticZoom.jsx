@@ -1,4 +1,4 @@
-import { COLORS, NordSlide, Text, Title } from './_nord'
+﻿import { COLORS, NordSlide, Text, Title } from './_nord'
 
 export default function Slide20AcousticZoom() {
   return (
@@ -17,7 +17,7 @@ export default function Slide20AcousticZoom() {
             }}
           >
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div className="nordPulseBlob" style={{ width: 210, height: 210, borderRadius: 999, background: 'rgba(163,190,140,0.18)', filter: 'blur(10px)' }} />
+              <div className="nordPulseBlob" style={{ width: 210, height: 210, borderRadius: 999, background: 'rgba(45,109,166,0.18)', filter: 'blur(10px)' }} />
               <div style={{ position: 'absolute', fontWeight: 900, fontSize: 26, color: COLORS.success }}>STG / A1</div>
             </div>
           </div>

@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react'
 
 export const COLORS = {
-  bg: '#2e3440',
-  bgLight: '#3b4252',
-  text: '#eceff4',
-  textDim: '#d8dee9',
-  accent1: '#88c0d0',
-  accent2: '#81a1c1',
-  accent3: '#5e81ac',
-  success: '#a3be8c',
-  warning: '#ebcb8b',
-  error: '#bf616a',
-  purple: '#b48ead',
+  bg: '#f5f5f0',
+  bgLight: '#efe9df',
+  text: '#233044',
+  textDim: '#4b5a6b',
+  accent1: '#2d6da6',
+  accent2: '#205081',
+  accent3: '#4a7fb0',
+  success: '#2d6da6',
+  warning: '#d98a2c',
+  error: '#a65a1e',
+  purple: '#4c5b6b',
 }
 
 export function NordSlide({ children, className = '' }) {

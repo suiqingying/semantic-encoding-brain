@@ -1,4 +1,4 @@
-import { ChartBar, COLORS, NordSlide, Text, Title } from './_nord'
+﻿import { ChartBar, COLORS, NordSlide, Text, Title } from './_nord'
 
 export default function Slide11AudioResults() {
   return (

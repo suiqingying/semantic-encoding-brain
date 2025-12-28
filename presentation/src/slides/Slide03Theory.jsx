@@ -1,8 +1,8 @@
-import { Card, COLORS, NordSlide, Text, Title } from './_nord'
+﻿import { Card, COLORS, NordSlide, Text, Title } from './_nord'
 
 function MiniBox({ label }) {
   return (
-    <div style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', minWidth: 120, textAlign: 'center' }}>
+    <div style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.72)', border: '1px solid rgba(35,48,68,0.12)', minWidth: 120, textAlign: 'center' }}>
       {label}
     </div>
   )
@@ -18,7 +18,7 @@ export default function Slide03Theory() {
             预训练深度神经网络（如 <span className="kw kwA">Transformer</span>）的层级结构，与大脑皮层处理信息的层级流存在功能上的
             <span style={{ color: COLORS.warning, fontWeight: 700 }}> 对应关系</span>。
           </Text>
-          <Card style={{ padding: 18, borderLeft: `6px solid ${COLORS.warning}`, background: `${COLORS.warning}12` }}>
+          <Card style={{ padding: 18, borderLeft: `6px solid ${COLORS.warning}`, background: 'rgba(217,138,44,0.12)' }}>
             <div style={{ fontSize: 24, fontStyle: 'italic', opacity: 0.92 }}>
               “Transformer 模型的中间层能够最好地预测大脑的 fMRI 响应。”
             </div>

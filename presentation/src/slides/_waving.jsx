@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+﻿import { useEffect, useRef } from 'react'
 
 function setupCanvasSize(canvas, width, height, dpr) {
   const w = Math.max(1, Math.floor(width * dpr))
@@ -9,7 +9,7 @@ function setupCanvasSize(canvas, width, height, dpr) {
 }
 
 // Single-row "final look" extracted from `presentation/src/slides/1.html`, without auto-growth UI.
-export default function WavingRow({ color = '#a3be8c', backgroundFade = 0.18, bpm = 195, unitScale = 0.16 }) {
+export default function WavingRow({ color = '#2d6da6', backgroundFade = 0.18, bpm = 195, unitScale = 0.16 }) {
   const canvasRef = useRef(null)
   const rafRef = useRef(0)
 
@@ -83,7 +83,7 @@ export default function WavingRow({ color = '#a3be8c', backgroundFade = 0.18, bp
       const dpr = window.devicePixelRatio || 1
       const { w, h } = setupCanvasSize(canvas, rect.width, rect.height, dpr)
 
-      ctx.fillStyle = `rgba(0,0,0,${backgroundFade})`
+      ctx.fillStyle = `rgba(245,245,240,${backgroundFade})`
       ctx.fillRect(0, 0, w, h)
 
       const { baseUnit, hSpacing, maxCols } = calculateRow(w, h)
@@ -131,3 +131,4 @@ export default function WavingRow({ color = '#a3be8c', backgroundFade = 0.18, bp
 
   return <canvas ref={canvasRef} className="waveCanvas" />
 }
+
