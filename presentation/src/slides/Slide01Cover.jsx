@@ -1,7 +1,7 @@
 ﻿import { useEffect, useRef, useState } from 'react'
 import { COLORS, NordSlide, hash01 } from './_nord'
 
-const TARGET_COUNT = 3800
+const TARGET_COUNT = 5000
 
 function hexToRgb(hex) {
   const clean = hex.replace('#', '')
@@ -16,6 +16,31 @@ function hexToRgb(hex) {
 function ParticleBrainCanvas() {
   const canvasRef = useRef(null)
   const [targets, setTargets] = useState([])
+  // Track mouse position
+  const mouseRef = useRef({ x: -9999, y: -9999 })
+
+  useEffect(() => {
+    const onMove = (e) => {
+      // Get canvas bounds to calculate relative mouse position correctly
+      const rect = canvasRef.current?.getBoundingClientRect()
+      if (rect) {
+        mouseRef.current = {
+          x: (e.clientX - rect.left) * (canvasRef.current.width / rect.width),
+          y: (e.clientY - rect.top) * (canvasRef.current.height / rect.height)
+        }
+      }
+    }
+    const onLeave = () => {
+       mouseRef.current = { x: -9999, y: -9999 }
+    }
+    
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseout', onLeave)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseout', onLeave)
+    }
+  }, [])
 
   useEffect(() => {
     const img = new Image()
@@ -118,17 +143,17 @@ function ParticleBrainCanvas() {
       const outlineCount = Math.min(normalizedOutline.length, Math.floor(TARGET_COUNT * 0.2))
       const fillCount = Math.min(normalizedFill.length, TARGET_COUNT - internalCount - outlineCount)
       const internalPick = normalizedInternal
-        .map((p, idx) => ({ p, k: hash01(idx, 211) }))
+        .map((p, idx) => ({ p: { ...p, isOutline: false }, k: hash01(idx, 211) }))
         .sort((a, b) => a.k - b.k)
         .slice(0, internalCount)
         .map((item) => item.p)
       const outlinePick = normalizedOutline
-        .map((p, idx) => ({ p, k: hash01(idx, 613) }))
+        .map((p, idx) => ({ p: { ...p, isOutline: true }, k: hash01(idx, 613) }))
         .sort((a, b) => a.k - b.k)
         .slice(0, outlineCount)
         .map((item) => item.p)
       const fillPick = normalizedFill
-        .map((p, idx) => ({ p, k: hash01(idx, 431) }))
+        .map((p, idx) => ({ p: { ...p, isOutline: false }, k: hash01(idx, 431) }))
         .sort((a, b) => a.k - b.k)
         .slice(0, fillCount)
         .map((item) => item.p)
@@ -158,12 +183,14 @@ function ParticleBrainCanvas() {
       y: 0,
       vx: 0,
       vy: 0,
-      tx: 0,
-      ty: 0,
+      rx: 0,
+      ry: 0,
       seed: t.seed,
-      size: 1 + (idx % 7 === 0 ? 0.8 : 0),
-      alpha: 0.35 + t.seed * 0.55,
-      hue: idx % 3,
+      isOutline: t.isOutline,
+      // Larger particles globally
+      size: t.isOutline ? 3.0 : (1.8 + (idx % 5 === 0 ? 1.2 : 0)),
+      alpha: t.isOutline ? 0.95 : (0.65 + t.seed * 0.3),
+      hue: idx % 4,
     }))
 
     const resize = () => {
@@ -173,12 +200,14 @@ function ParticleBrainCanvas() {
       canvas.height = Math.floor(height * dpr)
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       scale = Math.min(width, height) * 0.42
-      const cx = width * 0.62
-      const cy = height * 0.5
+      
+      // Update relative positions based on new scale
       particles.forEach((p, idx) => {
         const t = targets[idx % targets.length]
-        p.tx = cx + t.x * scale
-        p.ty = cy + t.y * scale
+        p.rx = t.x * scale
+        p.ry = t.y * scale
+        
+        // Initialize position if needed (first run)
         if (p.x === 0 && p.y === 0) {
           p.x = hash01(idx, 51) * width
           p.y = hash01(idx, 73) * height
@@ -189,16 +218,56 @@ function ParticleBrainCanvas() {
     resize()
     window.addEventListener('resize', resize)
 
+    // Current brain center position (smooth follow)
+    // Initialize to default position
+    let curCx = canvas.clientWidth * 0.62
+    let curCy = canvas.clientHeight * 0.5
+
     const draw = (time) => {
       const t = time * 0.001
       ctx.clearRect(0, 0, width, height)
+
+      const mx = mouseRef.current.x
+      const my = mouseRef.current.y
+      
+      // Determine target center for the brain
+      // If mouse is active, follow mouse. Else, go to default rest position.
+      const defaultCx = width * 0.62
+      const defaultCy = height * 0.5
+      
+      const targetCx = (mx > -1000) ? mx : defaultCx
+      const targetCy = (my > -1000) ? my : defaultCy
+
+      // Smoothly interpolate current center towards target center
+      // Adjust factor (0.05) for speed/lag.
+      curCx += (targetCx - curCx) * 0.05
+      curCy += (targetCy - curCy) * 0.05
+
+      const interactionRadius = 120
 
       particles.forEach((p, idx) => {
         const jitter = Math.sin(t * 0.7 + p.seed * 6.2) * 0.4
         const driftX = Math.cos(t * 0.4 + p.seed * 4.1) * 0.18
         const driftY = Math.sin(t * 0.5 + p.seed * 5.3) * 0.18
-        const tx = p.tx + driftX * 8 + jitter * 4
-        const ty = p.ty + driftY * 8
+        
+        // Calculate absolute target position: Center + Relative + Drift
+        let tx = curCx + p.rx + driftX * 8 + jitter * 4
+        let ty = curCy + p.ry + driftY * 8
+
+        // Mouse interaction: Repulsion
+        // We calculate vector from mouse to particle target
+        const dx = tx - mx
+        const dy = ty - my
+        const distSq = dx * dx + dy * dy
+
+        if (distSq < interactionRadius * interactionRadius) {
+          const dist = Math.sqrt(distSq)
+          if (dist > 0.1) {
+             const force = (1 - dist / interactionRadius) * 40
+             tx += (dx / dist) * force
+             ty += (dy / dist) * force
+          }
+        }
 
         p.vx += (tx - p.x) * 0.0024
         p.vy += (ty - p.y) * 0.0024
@@ -207,18 +276,31 @@ function ParticleBrainCanvas() {
         p.x += p.vx
         p.y += p.vy
 
-        const color = p.hue === 0 ? '136,192,208' : p.hue === 1 ? '129,161,193' : '94,129,172'
+        // Deeper, more saturated colors for light background
+        let color = '30, 80, 140' // Stronger Base Blue
+        if (p.hue === 1) color = '20, 50, 90' // Very Deep Blue
+        if (p.hue === 2) color = '60, 110, 170' // Vivid Mid Blue
+        if (p.hue === 3) color = '210, 100, 30' // Burnt Orange (High visibility)
+
+        if (p.isOutline) {
+          // Almost black for maximum definition
+          color = '10, 25, 50'
+        }
+
         ctx.fillStyle = `rgba(${color}, ${p.alpha})`
         ctx.beginPath()
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
         ctx.fill()
 
-        if (idx % 17 === 0) {
-          ctx.strokeStyle = `rgba(${color}, ${p.alpha * 0.4})`
-          ctx.lineWidth = 1
+        if (p.isOutline || idx % 14 === 0) {
+          // Much more subtle lines
+          const lineAlpha = p.isOutline ? 0.15 : 0.08
+          ctx.strokeStyle = `rgba(${color}, ${p.alpha * lineAlpha})`
+          ctx.lineWidth = p.isOutline ? 1.2 : 0.8
           ctx.beginPath()
           ctx.moveTo(p.x, p.y)
-          ctx.lineTo(p.x + p.vx * 14, p.y + p.vy * 14)
+          // Shortened velocity trail (from 15 to 6)
+          ctx.lineTo(p.x + p.vx * 6, p.y + p.vy * 6)
           ctx.stroke()
         }
       })
@@ -267,7 +349,7 @@ export default function Slide01Cover() {
             height: 100%;
             z-index: 1;
             pointer-events: none;
-            filter: drop-shadow(0 0 12px rgba(136, 192, 208, 0.15));
+            filter: drop-shadow(0 4px 16px rgba(30, 80, 140, 0.35));
           }
 
           .coverTitleBlock {

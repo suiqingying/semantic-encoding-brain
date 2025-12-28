@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 
-const BASE_W = 1366
-const BASE_H = 768
-
 export default function App() {
   const slides = useMemo(() => {
     const modules = import.meta.glob('./slides/Slide[0-9][0-9]*.jsx', { eager: true })
@@ -12,7 +9,6 @@ export default function App() {
   }, [])
   const [index, setIndex] = useState(0)
   const Slide = slides[index] || (() => null)
-  const [scale, setScale] = useState(1)
 
   useEffect(() => {
     let win = null
@@ -98,19 +94,9 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [slides.length])
 
-  useEffect(() => {
-    const update = () => {
-      const s = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H)
-      setScale(Number.isFinite(s) && s > 0 ? s : 1)
-    }
-    update()
-    window.addEventListener('resize', update)
-    return () => window.removeEventListener('resize', update)
-  }, [])
-
   return (
     <div className="stage">
-      <div className="stageInner" style={{ width: BASE_W, height: BASE_H, '--scale': scale }}>
+      <div className="stageInner">
         <Slide page={index + 1} total={slides.length} />
         <div className="microProgress" aria-hidden="true">
           <div
