@@ -2,7 +2,7 @@
 import { COLORS, NordSlide, Text, Title } from './_nord'
 import { Brain2DMap } from './_brain2dmap'
 
-export default function Slide16AcousticMap() {
+export default function Slide11SemanticMap() {
   const [roiColors, setRoiColors] = useState(null)
   const [roiStats, setRoiStats] = useState(null)
   const [loadError, setLoadError] = useState(null)
@@ -14,8 +14,8 @@ export default function Slide16AcousticMap() {
       try {
         setLoadError(null)
         const [colorsResp, statsResp] = await Promise.all([
-          fetch('/assets/corr_layer9_roi_colors_lh.json'),
-          fetch('/assets/corr_layer9_roi_stats_lh.json'),
+          fetch('/assets/corr_layer12_roi_colors_lh.json'),
+          fetch('/assets/corr_layer12_roi_stats_lh.json'),
         ])
         if (!colorsResp.ok) throw new Error(`HTTP ${colorsResp.status}`)
         if (!statsResp.ok) throw new Error(`HTTP ${statsResp.status}`)
@@ -37,7 +37,7 @@ export default function Slide16AcousticMap() {
   const legendNote = useMemo(() => {
     if (loadError) return `数据加载失败：${loadError}`
     if (!roiColors) return '正在加载离线颜色映射…'
-    return '颜色来自离线预计算（corr_layer9.npy → corr_layer9_roi_colors_lh.json）'
+    return '颜色来自离线预计算（corr_layer12.npy → corr_layer12_roi_colors_lh.json）'
   }, [roiColors, loadError])
 
   const readout = useMemo(() => {
@@ -53,7 +53,7 @@ export default function Slide16AcousticMap() {
 
   return (
     <NordSlide>
-      <Title stagger={0}>全脑声学地图</Title>
+      <Title stagger={0}>全脑语义地图</Title>
       <div
         className="nordGrid2"
         data-stagger=""
@@ -67,11 +67,11 @@ export default function Slide16AcousticMap() {
       >
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 18 }}>
           <Text>
-            将每个 ROI 的<strong style={{ color: COLORS.text }}>声学相关性</strong>映射为颜色：越红表示与语音特征越接近，越蓝表示相关性较弱。
+            将每个 ROI 的<strong style={{ color: COLORS.text }}>语言相关性</strong>映射为颜色：越红表示越接近语言网络，越蓝表示相关性较弱。
           </Text>
           <div className="nordCard" style={{ padding: 18, background: 'rgba(255,255,255,0.72)', borderColor: 'rgba(35,48,68,0.12)' }}>
-            <div style={{ fontSize: 14, fontWeight: 900, color: COLORS.text, marginBottom: 10 }}>声学相关性</div>
-            <div style={{ height: 12, borderRadius: 999, background: 'linear-gradient(90deg, #124eff, #ff2b2b)', border: '1px solid rgba(35,48,68,0.12)' }} />
+            <div style={{ fontSize: 14, fontWeight: 900, color: COLORS.text, marginBottom: 10 }}>语言相关性</div>
+            <div style={{ height: 12, borderRadius: 999, background: 'linear-gradient(90deg, #2d6da6, #d94b4b)', border: '1px solid rgba(35,48,68,0.12)' }} />
             <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', fontSize: 12, color: COLORS.textDim }}>
               <span>弱</span>
               <span>强</span>
@@ -81,14 +81,14 @@ export default function Slide16AcousticMap() {
           <div className="nordCard" style={{ padding: 18, background: 'rgba(255,255,255,0.72)', borderColor: 'rgba(35,48,68,0.12)' }}>
             <div style={{ fontSize: 14, fontWeight: 900, color: COLORS.text, marginBottom: 8 }}>核心发现</div>
             <div style={{ fontSize: 20, lineHeight: 1.45, color: COLORS.textDim }}>
-              声学表征更倾向于局部化分布，主要集中在颞上回与初级听觉皮层邻近区域。
+              语义表征并非局限于单一“语言区”，而是覆盖语言、记忆与高阶认知相关的分布式网络。
             </div>
           </div>
         </div>
 
         <div style={{ position: 'relative', height: 520 }}>
           <Brain2DMap
-            ariaLabel="Acoustic ROI map"
+            ariaLabel="Semantic ROI map"
             surfaceUrl="/atlas/tpl-fsaverage_den-41k_hemi-L_inflated.surf.gii"
             labelUrl="/atlas/tpl-fsaverage6_hemi-L_desc-MMP_dseg.label.gii"
             roiColorById={roiColors || undefined}

@@ -8,7 +8,7 @@ function Bolt() {
   )
 }
 
-export default function Slide22Fusion() {
+export default function Slide13Fusion() {
   return (
     <NordSlide>
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
