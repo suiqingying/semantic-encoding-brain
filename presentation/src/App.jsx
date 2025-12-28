@@ -17,6 +17,11 @@ export default function App() {
   useEffect(() => {
     let win = null
     let canceled = false
+    const ensureFocus = () => {
+      if (!document?.body) return
+      document.body.tabIndex = -1
+      document.body.focus({ preventScroll: true })
+    }
 
     const getWin = async () => {
       if (win) return win
@@ -69,10 +74,17 @@ export default function App() {
       }
     }
 
+    ensureFocus()
     window.addEventListener('keydown', onKeyDown, true)
+    document.addEventListener('keydown', onKeyDown, true)
+    window.addEventListener('focus', ensureFocus, true)
+    window.addEventListener('pointerdown', ensureFocus, true)
     return () => {
       canceled = true
       window.removeEventListener('keydown', onKeyDown, true)
+      document.removeEventListener('keydown', onKeyDown, true)
+      window.removeEventListener('focus', ensureFocus, true)
+      window.removeEventListener('pointerdown', ensureFocus, true)
     }
   }, [])
 

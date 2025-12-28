@@ -2,6 +2,11 @@
   "identifier": "default",
   "description": "Default capabilities for the slides app.",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": [
+    "core:default",
+    "core:window:allow-is-fullscreen",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-close"
+  ]
 }
 
