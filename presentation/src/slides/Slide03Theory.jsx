@@ -1,13 +1,5 @@
 ﻿import { Card, COLORS, NordSlide, Text, Title } from './_nord'
 
-function MiniBox({ label }) {
-  return (
-    <div style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.72)', border: '1px solid rgba(35,48,68,0.12)', minWidth: 120, textAlign: 'center' }}>
-      {label}
-    </div>
-  )
-}
-
 export default function Slide03Theory() {
   return (
     <NordSlide>
@@ -27,23 +19,17 @@ export default function Slide03Theory() {
         </div>
 
         <div className="nordCenter">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 34 }}>
-            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <MiniBox label="Input" />
-              <MiniBox label="Layers" />
-              <MiniBox label="Output" />
-              <div style={{ marginTop: 6, fontSize: 13, opacity: 0.55 }}>AI Model</div>
-            </div>
-
-            <div style={{ width: 80, height: 2, background: `linear-gradient(90deg, ${COLORS.accent3}, ${COLORS.accent1})`, borderRadius: 999, opacity: 0.8 }} />
-
-            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <MiniBox label="Sensory" />
-              <MiniBox label="Cortex" />
-              <MiniBox label="Semantic" />
-              <div style={{ marginTop: 6, fontSize: 13, opacity: 0.55 }}>Human Brain</div>
-            </div>
-          </div>
+          <img
+            src="/assets/duiqi.png"
+            alt="对齐示意图"
+            style={{
+              width: '100%',
+              maxWidth: 760,
+              maxHeight: 520,
+              objectFit: 'contain',
+              background: 'transparent',
+            }}
+          />
         </div>
       </div>
     </NordSlide>
