@@ -10,15 +10,15 @@
 *   **粒子大脑系统**: 由 5000+ 个动态粒子构成的 3D 大脑轮廓。
 *   **交互物理**: 全局鼠标追踪与局部排斥力场，赋予封面生命感。
 
-### Slide 02: 建模框架
-*   **实时波形渲染**: 基于直接 DOM 操作的高性能波形动画，模拟 fMRI 信号分解过程。
-
-### Slide 03: 理论基础
+### Slide 02: 理论基础
 *   **核心概念梳理**: 梳理语义编码与脑区表征的关键假设与推导。
 
-### Slide 04: 深度数据集介绍
+### Slide 03: 数据集介绍
 *   **The 21st Year**: 展示 Narratives 数据集的来源、刺激详情及 fMRI 参数。
 *   **交互可视化**: 包含镜像柱状声波图和可滑动的长文本叙述区域。
+
+### Slide 04: 方法流程
+*   **流程拆解**: 展示整体建模流程、输入输出与关键环节。
 
 ### Slide 05: 特征提取器
 *   **极简主义设计**: 采用无容器开放式布局，配合 Nord 风格分割线，展示跨模态模型库（GPT-2, Wav2Vec, Whisper 等）。
@@ -40,20 +40,17 @@
 ### Slide 10: 层级分析
 *   **层级贡献**: 分析不同层级表征的拟合贡献与最优层。
 
-### Slide 11: 功能偏好
-*   **偏好对比**: 对比语义/声学特征在不同脑区的功能偏好。
-
-### Slide 12: 语义地图
+### Slide 11: 语义地图
 *   **空间映射**: 以投影方式展示语义特征在皮层上的空间分布。
 
-### Slide 13: 声学地图
+### Slide 12: 声学地图
 *   **空间映射**: 以投影方式展示声学特征在皮层上的空间分布。
 
-### Slide 18: 总结
-*   **结论回顾**: 汇总贡献、结论与后续方向。
-
-### Slide 19: 融合展望
+### Slide 13: 融合展望
 *   **多模态融合**: 汇聚语义与声学的融合思路与应用方向。
+
+### Slide 14: 总结
+*   **结论回顾**: 汇总贡献、结论与后续方向。
 
 ### Slide 15: 终极致谢 (Digital Life)
 *   **液态粒子交互**: “THANK YOU”由 20,000 个粒子物理构成，支持鼠标实时“拨弄”，产生液态涟漪与颜色偏移。
@@ -87,20 +84,19 @@ npm run tauri:build
 src/
 ├── slides/                      # 幻灯片组件
 │   ├── Slide01Cover.jsx         # 封面
-│   ├── Slide02Methodology.jsx   # 建模框架
-│   ├── Slide03Theory.jsx        # 理论基础
-│   ├── Slide04Dataset.jsx       # 数据集
+│   ├── Slide02Theory.jsx        # 理论基础
+│   ├── Slide03Dataset.jsx       # 数据集
+│   ├── Slide04Methodology.jsx   # 方法流程
 │   ├── Slide05FeatureIntro.jsx  # 特征库
 │   ├── Slide06SemanticFeature.jsx # 语义特征工程
 │   ├── Slide07AcousticFeature.jsx # 声学提取动画
 │   ├── Slide08TextResults.jsx   # 文本结果
 │   ├── Slide09AudioResults.jsx  # 音频结果
 │   ├── Slide10LayerAnalysis.jsx # 层级分析
-│   ├── Slide11FunctionalPreference.jsx # 功能偏好
 │   ├── Slide12SemanticMap.jsx   # 语义地图
 │   ├── Slide13AcousticMap.jsx   # 声学地图
-│   ├── Slide18Summary.jsx       # 总结
-│   ├── Slide19Fusion.jsx        # 融合展望
+│   ├── Slide13Fusion.jsx        # 融合展望
+│   ├── Slide14Summary.jsx       # 总结
 │   └── Slide15Thanks.jsx        # 终极致谢页
 ├── styles.css                   # 全局样式
 └── App.jsx                      # 核心控制器
