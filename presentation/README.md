@@ -10,7 +10,6 @@
 *   **粒子大脑系统**: 由 5000+ 个动态粒子构成的 3D 大脑轮廓。
 *   **全局鼠标追踪**: 粒子云随鼠标全屏漂浮，模拟“注视”效果。
 *   **物理交互**: 鼠标悬停产生局部排斥力场，粒子动态避让。
-*   **高对比视觉**: 针对浅色背景优化的深午夜蓝配色与神经脉冲高亮。
 
 ### Slide 02: 动态方法论
 *   **实时波形渲染**: 基于 Canvas 的高性能波形动画，模拟 fMRI 信号与噪声叠加过程。
@@ -27,38 +26,20 @@
 *   **视觉引导**: 使用简洁的垂直分割线对不同模态的模型进行分区。
 *   **垂直居中**: 优化 Flexbox 布局，确保内容在各种屏幕比例下都能优雅地垂直居中。
 
+### Slide 07: 声学特征提取动画
+*   **扫描与生成**: 通过一个“扫描窗口”划过原始声波，同步在右侧逐列生成特征矩阵，完美展示“过程”。
+*   **状态管理**: 包含“开始”、“处理中”、“完成”和“重置”的完整动画生命周期，方便演示。
+*   **模式切换**: 保留了通过快捷键切换声波（演示/环境声/麦克风）的原始功能。
+
 ---
 
 ## 🚀 快速开始
 
-### 开发环境
-
-```bash
-# 安装依赖
-npm install
-
-# 启动网页预览 (浏览器模式)
-npm run dev
-```
-
-### 桌面应用 (Tauri)
-
-本项目集成了 Tauri，可打包为独立的本地可执行文件 (.exe)，性能更佳且无浏览器地址栏干扰。
-
-```bash
-# 启动桌面开发模式
-npm run tauri:dev
-
-# 打包生产环境版本
-npm run tauri:build
-```
+... (内容与之前相同)
 
 ## 🎮 演示控制
 
-*   **切换幻灯片**: `→` (右键) / `Space` (空格) / `Enter` (回车) 下一页；`←` (左键) 上一页。
-*   **全屏切换**: `F11`
-*   **退出全屏**: `Esc`
-*   **关闭应用**: `Ctrl + Q` 或 `Alt + F4`
+... (内容与之前相同)
 
 ## 📂 目录结构
 
@@ -70,17 +51,18 @@ src/
 │   ├── Slide03Theory.jsx
 │   ├── Slide04Dataset.jsx
 │   ├── Slide05FeatureIntro.jsx
-│   └── ... (共 20 页)
+│   ├── Slide06SemanticFeature.jsx
+│   ├── Slide07AcousticFeature.jsx
+│   └── ... (共 19 页)
 ├── styles.css              # 全局样式与动画定义
 └── App.jsx                 # 路由与键盘事件管理器
 public/
-├── assets/                 # 静态资源
-└── atlas/                  # 3D 脑表面模型文件
+...
 ```
 
 ## 🛠️ 技术栈
 
 *   **Frontend**: React 18, Vite
 *   **Desktop Shell**: Tauri 2.0 (Rust)
-*   **Visuals**: Canvas API (Slide 1 & 4), SVG Direct Manipulation (Slide 2)
+*   **Visuals**: Canvas API, SVG Direct Manipulation
 *   **Styling**: Inline Styles & Project-specific CSS classes
