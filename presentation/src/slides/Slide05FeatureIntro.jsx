@@ -67,8 +67,8 @@ const Divider = () => (
 
 export default function Slide05FeatureIntro() {
   const data = [
-    { title: "文本模型", enTitle: "Text Models", icon: FileTextIcon, models: ["GPT-2", "BERT", "Llama / Qwen"] },
-    { title: "音频模型", enTitle: "Audio Models", icon: AudioLinesIcon, models: ["Wav2Vec 2.0", "WavLM", "HuBERT"] },
+    { title: "文本模型", enTitle: "Text Models", icon: FileTextIcon, models: ["GPT-2", "BERT", "Qwen2"] },
+    { title: "音频模型", enTitle: "Audio Models", icon: AudioLinesIcon, models: ["Wav2Vec 2.0", "WavLM"] },
     { title: "多模态模型", enTitle: "Multimodal Models", icon: LayersIcon, models: ["CLAP", "Whisper"] }
   ];
 
