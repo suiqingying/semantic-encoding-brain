@@ -1,13 +1,29 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Card, COLORS, NordSlide, SubTitle, Text, Title } from './_nord'
 import Waveform from './_waveform'
 import WavingRow from './_waving'
 
-const FeatureMatrix = ({ isExtracting }) => {
+const FeatureMatrix = ({ status }) => {
   const numRows = 8;
   const numCols = 18;
+  const colors = useMemo(
+    () =>
+      Array.from(
+        { length: numRows * numCols },
+        () => `hsl(${200 + Math.random() * 40}, 70%, ${50 + Math.random() * 20}%)`,
+      ),
+    [],
+  );
+
+  const matrixClassName =
+    status === 'extracting'
+      ? 'feature-matrix extracting'
+      : status === 'done'
+        ? 'feature-matrix filled'
+        : 'feature-matrix';
+
   return (
-    <div className={`feature-matrix ${isExtracting ? 'extracting' : ''}`}>
+    <div className={matrixClassName}>
       {Array.from({ length: numRows * numCols }).map((_, i) => {
         const col = Math.floor(i / numRows);
         return (
@@ -16,7 +32,7 @@ const FeatureMatrix = ({ isExtracting }) => {
             className="feature-cell" 
             style={{ 
               '--col': col, 
-              background: `hsl(${200 + Math.random() * 40}, 70%, ${50 + Math.random() * 20}%)`
+              background: colors[i],
             }} 
           />
         )
@@ -90,6 +106,10 @@ export default function Slide07AcousticFeature() {
           animation: pop-in 0.4s ease forwards;
           /* Delay is based on the column index, creating a left-to-right fill */
           animation-delay: calc(var(--col) * 150ms);
+        }
+        .filled .feature-cell {
+          opacity: 1;
+          transform: scale(1);
         }
         @keyframes pop-in {
           to { opacity: 1; transform: scale(1); }
@@ -183,7 +203,7 @@ export default function Slide07AcousticFeature() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <SubTitle style={{marginTop: 0, fontSize: 22}}>声学特征矩阵 (Feature Matrix)</SubTitle>
            <Card style={{ padding: 20 }}>
-            <FeatureMatrix isExtracting={extractionStatus === 'extracting'} />
+            <FeatureMatrix status={extractionStatus} />
           </Card>
            <Text>
             一个“扫描窗口”划过原始声波，每一步都将窗口内的音频通过模型转化为一列高维特征向量，最终生成完整的特征矩阵。
