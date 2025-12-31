@@ -1,14 +1,20 @@
 ﻿import { ChartBar, COLORS, NordSlide, Text, Title } from './_nord'
 
 export default function Slide10TextResults() {
+  const data = [
+    { label: 'Qwen-7B', value: 0.0423, color: COLORS.accent1, highlight: true, note: 'Best' },
+    { label: 'GPT2-XL', value: 0.0238, color: COLORS.textDim },
+    { label: 'BERT-Large', value: 0.0065, color: COLORS.textDim },
+  ]
+  const maxValue = 0.05
   return (
     <NordSlide>
       <Title stagger={0}>文本模型性能对比</Title>
       <div className="nordGrid2" data-stagger="" style={{ ...{ '--stagger-delay': '400ms' }, marginTop: 22, alignItems: 'center' }}>
         <div>
-          <ChartBar label="Qwen-7B" value={0.58} color={COLORS.accent1} max={0.8} highlight note="Best" />
-          <ChartBar label="GPT2-XL" value={0.42} color={COLORS.textDim} max={0.8} />
-          <ChartBar label="BERT-Large" value={0.3} color={COLORS.textDim} max={0.8} />
+          {data.map((item) => (
+            <ChartBar key={item.label} label={item.label} value={item.value} color={item.color} max={maxValue} highlight={item.highlight} note={item.note} />
+          ))}
         </div>
         <div>
           <Text>
