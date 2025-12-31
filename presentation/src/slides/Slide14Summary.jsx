@@ -1,12 +1,46 @@
-﻿import { COLORS, NordSlide, Text, Title } from './_nord'
+﻿import { useEffect, useMemo, useState } from 'react'
+import { COLORS, NordSlide, Text, Title } from './_nord'
 
 export default function Slide14Summary() {
-  const maxValue = 0.8
   const barAreaHeight = 180
-  const data = [
-    { label: '线性模型', value: 0.58, color: COLORS.textDim },
-    { label: '非线性模型', value: 0.76, color: COLORS.accent1 },
-  ]
+  const [linearAvg, setLinearAvg] = useState(null)
+  const [loadError, setLoadError] = useState(null)
+
+  useEffect(() => {
+    let canceled = false
+    async function load() {
+      try {
+        setLoadError(null)
+        const resp = await fetch('/assets/corr_layer12_roi_stats_lh.json')
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+        const stats = await resp.json()
+        const values = Object.values(stats || {})
+          .map((item) => (typeof item?.r2 === 'number' ? item.r2 : null))
+          .filter((v) => v != null)
+        const avg = values.length ? values.reduce((a, b) => a + b, 0) / values.length : null
+        if (!canceled) setLinearAvg(avg)
+      } catch (e) {
+        if (!canceled) setLoadError(e?.message || String(e))
+      }
+    }
+    load()
+    return () => {
+      canceled = true
+    }
+  }, [])
+
+  const data = useMemo(() => {
+    return [
+      { label: '线性模型', value: linearAvg ?? 0, color: COLORS.textDim, display: linearAvg },
+      { label: '非线性模型', value: 0.02534, color: COLORS.accent1, display: 0.02534 },
+    ]
+  }, [linearAvg])
+  const maxValue = useMemo(() => {
+    const values = data.map((item) => item.value).filter((v) => typeof v === 'number')
+    const max = values.length ? Math.max(...values) : 1
+    return max > 0 ? max : 1
+  }, [data])
+
 
   return (
     <NordSlide>
@@ -62,7 +96,7 @@ export default function Slide14Summary() {
                   />
                 </div>
                 <div style={{ marginTop: 12, fontSize: 16, color: COLORS.text }}>{item.label}</div>
-                <div style={{ marginTop: 4, fontSize: 14, color: COLORS.textDim }}>{item.value.toFixed(2)}</div>
+                <div style={{ marginTop: 4, fontSize: 14, color: COLORS.textDim }}>{item.display == null ? '—' : item.display.toFixed(3)}</div>
               </div>
             )
           })}
