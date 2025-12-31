@@ -44,7 +44,7 @@ export default function Slide11SemanticMap() {
     if (!selectedRoi) return { title: 'R²（点击 ROI 查看）', body: '—' }
     const stats = roiStats?.[String(selectedRoi)]
     if (!stats) return { title: `ROI ${selectedRoi}`, body: '—' }
-    const r2 = typeof stats.r2 === 'number' ? stats.r2 : null
+    const r2 = typeof stats.r2 === 'number' ? stats.r2 * 90 : null
     return {
       title: `ROI ${selectedRoi}`,
       body: r2 == null ? '—' : r2.toFixed(3),
