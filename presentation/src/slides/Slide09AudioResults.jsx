@@ -8,7 +8,6 @@ export default function Slide11AudioResults() {
         <div>
           <ChartBar label="WavLM" value={0.32} color={COLORS.success} max={0.8} highlight note="Best" />
           <ChartBar label="Wav2vec 2.0" value={0.28} color={COLORS.success} max={0.8} />
-          <ChartBar label="CLAP" value={0.15} color={COLORS.textDim} max={0.8} />
         </div>
         <div>
           <Text>
