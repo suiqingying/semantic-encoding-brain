@@ -95,8 +95,8 @@ src/
 │   ├── Slide10LayerAnalysis.jsx # 层级分析
 │   ├── Slide12SemanticMap.jsx   # 语义地图
 │   ├── Slide13AcousticMap.jsx   # 声学地图
-│   ├── Slide13Fusion.jsx        # 融合展望
-│   ├── Slide14Summary.jsx       # 总结
+│   ├── Slide13LinearNonlinear.jsx # 线性/非线性结果
+│   ├── Slide14Fusion.jsx        # 融合展望
 │   └── Slide15Thanks.jsx        # 终极致谢页
 ├── styles.css                   # 全局样式
 └── App.jsx                      # 核心控制器
