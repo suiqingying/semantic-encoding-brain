@@ -27,14 +27,14 @@ export default function Slide12LayerAnalysis() {
   const [activePoint, setActivePoint] = useState(null)
 
   const series = [
-    { name: 'Qwen-7B', color: '#57a2ff', peak: 0.58, values: [0.037, 0.149, 0.372, 0.576, 0.55, 0.416] },
-    { name: 'GPT2-XL', color: '#ffb04a', peak: 0.42, values: [0.03, 0.163, 0.355, 0.42, 0.355, 0.251] },
-    { name: 'BERT-Large', color: 'rgba(255,255,255,0.88)', peak: 0.3, values: [0.027, 0.16, 0.279, 0.3, 0.256, 0.147] },
+    { name: 'Qwen-7B', color: '#57a2ff', peak: 0.0423, values: [0.002698, 0.010867, 0.02713, 0.042008, 0.040112, 0.030339] },
+    { name: 'GPT2-XL', color: '#ffb04a', peak: 0.0238, values: [0.0017, 0.009237, 0.020117, 0.0238, 0.020117, 0.014223] },
+    { name: 'BERT-Large', color: 'rgba(255,255,255,0.88)', peak: 0.0065, values: [0.000585, 0.003467, 0.006045, 0.0065, 0.005547, 0.003185] },
   ]
 
   const xTicks = [0, 0.2, 0.4, 0.6, 0.8, 1]
   const xSamples = xTicks
-  const yMax = 0.65
+  const yMax = 0.05
 
   const vb = { w: 1200, h: 540 }
   const pad = { l: 110, r: 60, t: 80, b: 100 }
@@ -100,7 +100,7 @@ export default function Slide12LayerAnalysis() {
               strokeWidth="1"
             />
           ))}
-          {[0, 0.2, 0.4, 0.6].map((t) => (
+          {[0, 0.01, 0.02, 0.03, 0.04, 0.05].map((t) => (
             <line
               key={`y-${t}`}
               x1={plot.x}
@@ -117,7 +117,7 @@ export default function Slide12LayerAnalysis() {
           <line x1={plot.x} x2={plot.x + plot.w} y1={plot.y + plot.h} y2={plot.y + plot.h} stroke="rgba(35,48,68,0.55)" strokeWidth="2" />
 
           {/* y ticks */}
-          {[0, 0.2, 0.4, 0.6].map((t) => (
+          {[0, 0.01, 0.02, 0.03, 0.04, 0.05].map((t) => (
             <g key={`yt-${t}`}>
               <text x={plot.x - 10} y={y2px(t) + 5} fill={COLORS.textDim} fontSize="16" textAnchor="end">
                 {t.toFixed(2)}
