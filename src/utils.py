@@ -113,7 +113,8 @@ def extract_text_features(tokens: list[list[str]], tokenizer: PreTrainedTokenize
         batch = batch.to(device)
 
         # 使用 autocast 进行混合精度推理 (对于Llama等较大的模型, autocast可以显著节省显存)
-        with torch.autocast(device_type='cuda', dtype=torch.bfloat16, enabled=autocast):
+        device_type = 'cuda' if 'cuda' in str(device) else 'cpu'
+        with torch.autocast(device_type=device_type, dtype=torch.bfloat16, enabled=autocast):
             outputs = model(**batch, output_hidden_states=True)
         
         # 利用attention mask计算每个序列last token的索引
@@ -154,7 +155,8 @@ def extract_audio_features(audio_chunks: torch.Tensor,  # 输入：音频chunks�
                            device: Union[str, torch.device],
                            batch_size: int = 32,
                            autocast: bool = False,
-                           pooling: Literal['mean', 'last'] = 'mean') -> dict[int, np.ndarray]:
+                           pooling: Literal['mean', 'last'] = 'mean',
+                           sampling_rate: int = 16000) -> dict[int, np.ndarray]:
     """
     使用预训练音频模型提取音频chunks的特征
     
@@ -174,21 +176,42 @@ def extract_audio_features(audio_chunks: torch.Tensor,  # 输入：音频chunks�
         dict : 层索引 -> 特征数组 [n_chunks, feature_dim]
     """
     
+    is_whisper = getattr(getattr(model, "config", None), "model_type", "") == "whisper"
+
     # 1. 定义内部collate函数
+    chunk_len = int(audio_chunks.shape[1])
+
     def collate_audio_fn(batch: list[torch.Tensor]) -> dict:
         """将一批音频chunk转换为模型输入格式"""
         # 转换为numpy数组并确保为float32
         audio_arrays = [chunk.numpy().astype(np.float32) for chunk in batch]
         
         # 使用音频处理器处理
-        inputs = processor(
-            audio_arrays,
-            sampling_rate=16000,           # Wav2Vec2等模型的标准采样率
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=16000 * 3           # 3秒音频（16000*3）
-        )
+        if is_whisper:
+            target_len = int(30 * sampling_rate)
+            padded_arrays = []
+            for arr in audio_arrays:
+                if arr.shape[0] < target_len:
+                    pad_width = target_len - arr.shape[0]
+                    arr = np.pad(arr, (0, pad_width), mode="constant")
+                elif arr.shape[0] > target_len:
+                    arr = arr[:target_len]
+                padded_arrays.append(arr)
+            feature_extractor = getattr(processor, "feature_extractor", processor)
+            inputs = feature_extractor(
+                padded_arrays,
+                sampling_rate=sampling_rate,
+                return_tensors="pt",
+            )
+        else:
+            inputs = processor(
+                audio_arrays,
+                sampling_rate=sampling_rate,   # Wav2Vec2等模型的标准采样率
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                max_length=chunk_len
+            )
         return inputs
     
     # 2. 创建DataLoader
@@ -209,6 +232,19 @@ def extract_audio_features(audio_chunks: torch.Tensor,  # 输入：音频chunks�
     
     print('开始提取音频特征...')
     
+    def pick_hidden_states(outputs) -> tuple:
+        for attr in ("hidden_states", "encoder_hidden_states", "audio_hidden_states"):
+            hidden = getattr(outputs, attr, None)
+            if hidden is not None:
+                return hidden
+        audio_out = getattr(outputs, "audio_model_output", None)
+        if audio_out is not None and getattr(audio_out, "hidden_states", None) is not None:
+            return audio_out.hidden_states
+        last_hidden = getattr(outputs, "last_hidden_state", None)
+        if last_hidden is not None:
+            return (last_hidden,)
+        raise ValueError("Model outputs do not contain hidden states.")
+
     # 5. 逐批次提取特征
     for ii, batch in tqdm(enumerate(dataloader), total=len(dataloader)):
         # 移动数据到设备
@@ -219,16 +255,26 @@ def extract_audio_features(audio_chunks: torch.Tensor,  # 输入：音频chunks�
                           dtype=torch.bfloat16, enabled=autocast):
             outputs = model(**batch, output_hidden_states=True)
         
+        hidden_states_all = pick_hidden_states(outputs)
         # 6. 提取指定层的特征并池化
         for layer_idx in layers:
             # 获取指定层的输出 [batch_size, seq_len, hidden_dim]
-            layer_state = outputs.hidden_states[layer_idx]
+            layer_state = hidden_states_all[layer_idx]
+            attn_mask = None
+            if 'attention_mask' in batch:
+                raw_mask = batch['attention_mask']
+                if raw_mask.shape[1] == layer_state.shape[1]:
+                    attn_mask = raw_mask
+                elif hasattr(model, "_get_feature_vector_attention_mask"):
+                    attn_mask = model._get_feature_vector_attention_mask(
+                        layer_state.shape[1], raw_mask
+                    )
             
             # 池化操作
             if pooling == 'mean':
                 # 使用attention mask计算有效长度的均值
-                if 'attention_mask' in batch:
-                    mask = batch['attention_mask'].unsqueeze(-1)  # [batch, seq_len, 1]
+                if attn_mask is not None:
+                    mask = attn_mask.unsqueeze(-1)  # [batch, seq_len, 1]
                     sum_state = (layer_state * mask).sum(dim=1)    # [batch, hidden_dim]
                     pooling_state = sum_state / mask.sum(dim=1)    # [batch, hidden_dim]
                 else:
@@ -237,8 +283,8 @@ def extract_audio_features(audio_chunks: torch.Tensor,  # 输入：音频chunks�
                     
             elif pooling == 'last':
                 # 取最后一个有效时间步
-                if 'attention_mask' in batch:
-                    last_token_inds = batch['attention_mask'].sum(dim=1) - 1  # [batch]
+                if attn_mask is not None:
+                    last_token_inds = attn_mask.sum(dim=1) - 1  # [batch]
                     pooling_state = layer_state[
                         torch.arange(last_token_inds.shape[0], device=device),
                         last_token_inds
@@ -390,6 +436,29 @@ def fit_encoding_cv(X: np.ndarray, y: np.ndarray, cv_splitter: KFold,
     
     corrs = np.tanh(np.mean(z_corrs, 0))
     
+    return model, corrs
+
+
+def fit_encoding_single(X: np.ndarray, y: np.ndarray,
+                        excluded_start: int = 5, excluded_end: int = 5,
+                        alpha: float = 10000.0,
+                        test_ratio: float = 0.2
+                        ) -> tuple[Ridge, np.ndarray]:
+    """
+    单次划分训练/测试，避免K折交叉验证带来的开销.
+    """
+    X, y = X[excluded_start: -excluded_end], y[excluded_start: -excluded_end]
+    n = X.shape[0]
+    split = int(n * (1 - test_ratio))
+    if split <= 0 or split >= n:
+        raise ValueError("Invalid test_ratio for current sample size.")
+    X_train, y_train = X[:split], y[:split]
+    X_test, y_test = X[split:], y[split:]
+
+    model = Ridge(alpha=alpha)
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    corrs = corr_with_np(y_pred, y_test)
     return model, corrs
 
 

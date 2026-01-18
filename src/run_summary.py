@@ -49,6 +49,7 @@ def main() -> int:
     log_files = list(RESULTS_ROOT.rglob("log.txt"))
     rows = []
     for log_path in log_files:
+        print(f"[summary] parsing: {log_path}", flush=True)
         rows.extend(parse_log(log_path))
 
     if not rows:

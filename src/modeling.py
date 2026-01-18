@@ -7,7 +7,7 @@ from typing import Iterable
 import numpy as np
 from sklearn.model_selection import KFold
 
-from src.utils import concat_feature, fit_encoding_cv
+from src.utils import concat_feature, fit_encoding_cv, fit_encoding_single
 
 
 @dataclass
@@ -27,18 +27,30 @@ def build_fir(features: np.ndarray, window: int, offset: int) -> np.ndarray:
 def run_cv_multi_subjects(X: np.ndarray, fmris: dict, subjects: Iterable[int],
                           excluded_start: int, excluded_end: int,
                           alphas: Iterable[float], kfold: int) -> tuple[list[float], np.ndarray]:
-    outer_cv = KFold(n_splits=kfold, shuffle=False)
+    if kfold <= 1:
+        outer_cv = None
+    else:
+        outer_cv = KFold(n_splits=kfold, shuffle=False)
     corr_means: list[float] = []
     last_corr_map = None
     for sub in subjects:
-        model, corr_map = fit_encoding_cv(
-            X=X,
-            y=fmris[sub],
-            cv_splitter=outer_cv,
-            alphas=alphas,
-            excluded_start=excluded_start,
-            excluded_end=excluded_end,
-        )
+        if outer_cv is None:
+            model, corr_map = fit_encoding_single(
+                X=X,
+                y=fmris[sub],
+                alpha=list(alphas)[0],
+                excluded_start=excluded_start,
+                excluded_end=excluded_end,
+            )
+        else:
+            model, corr_map = fit_encoding_cv(
+                X=X,
+                y=fmris[sub],
+                cv_splitter=outer_cv,
+                alphas=alphas,
+                excluded_start=excluded_start,
+                excluded_end=excluded_end,
+            )
         corr_means.append(float(np.mean(corr_map)))
         last_corr_map = corr_map
     return corr_means, last_corr_map

@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import csv
+import re
 
 import numpy as np
 import torch
@@ -11,7 +13,6 @@ from sklearn.decomposition import PCA
 
 from src.config import (
     RESULTS_ROOT,
-    ATLAS_ROOT,
     DEFAULT_PCA_DIM,
     DEFAULT_FIR_WINDOW,
     DEFAULT_FIR_OFFSET,
@@ -22,30 +23,65 @@ from src.config import (
 from src.data import load_fmri, load_align_df
 from src.text_pipeline import align_word_features_to_tr
 from src.modeling import build_fir, run_cv_multi_subjects, summarize, append_log
-from src.viz import save_corr_map
 
 
 def safe_name(model_name: str) -> str:
     return model_name.replace("/", "_")
 
 
+def pick_best_from_summary(summary_path: Path) -> tuple[str, int, int, str, int, int]:
+    best_text = ("", -1, -1, float("-inf"))  # model, layer, ctx_words, mean
+    best_audio = ("", -1, -1, float("-inf"))  # model, layer, tr_win, mean
+
+    with summary_path.open("r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            log_path = row.get("log", "")
+            if not log_path:
+                continue
+            try:
+                mean_val = float(row.get("mean", "nan"))
+            except ValueError:
+                continue
+            layer = int(row.get("layer", -1))
+
+            if "/text/" in log_path:
+                m = re.search(r"/text/([^/]+)/win(\d+)/", log_path)
+                if m and mean_val > best_text[3]:
+                    best_text = (m.group(1), layer, int(m.group(2)), mean_val)
+            elif "/audio/" in log_path:
+                m = re.search(r"/audio/([^/]+)/(\d+)TR/", log_path)
+                if m and mean_val > best_audio[3]:
+                    best_audio = (m.group(1), layer, int(m.group(2)), mean_val)
+
+    if not best_text[0] or not best_audio[0]:
+        raise ValueError("Missing text/audio entries in results/summary.csv.")
+    return best_text[0], best_text[1], best_text[2], best_audio[0], best_audio[1], best_audio[2]
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Multimodal fusion (text + audio)")
-    parser.add_argument("--text-model", required=True, help="文本模型")
-    parser.add_argument("--audio-model", required=True, help="音频模型")
-    parser.add_argument("--text-layer", type=int, required=True, help="文本层")
-    parser.add_argument("--audio-layer", type=int, required=True, help="音频层")
-    parser.add_argument("--ctx-words", type=int, default=200, help="文本上下文窗口")
-    parser.add_argument("--tr-win", type=int, default=2, help="音频TR窗口")
+    parser.add_argument("--text-model", default=None, help="文本模型")
+    parser.add_argument("--audio-model", default=None, help="音频模型")
+    parser.add_argument("--text-layer", type=int, default=None, help="文本层")
+    parser.add_argument("--audio-layer", type=int, default=None, help="音频层")
+    parser.add_argument("--ctx-words", type=int, default=None, help="文本上下文窗口")
+    parser.add_argument("--tr-win", type=int, default=None, help="音频TR窗口")
     parser.add_argument("--pca-dim", type=int, default=DEFAULT_PCA_DIM, help="PCA 维度")
     parser.add_argument("--fir-window", type=int, default=DEFAULT_FIR_WINDOW, help="FIR 窗口")
     parser.add_argument("--fir-offset", type=int, default=DEFAULT_FIR_OFFSET, help="FIR 偏移")
-    parser.add_argument("--save-corr-map", action="store_true", help="保存皮层相关图")
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+    if any(v is None for v in [args.text_model, args.audio_model, args.text_layer,
+                               args.audio_layer, args.ctx_words, args.tr_win]):
+        summary_path = RESULTS_ROOT / "summary.csv"
+        if not summary_path.exists():
+            raise FileNotFoundError("results/summary.csv not found. Run run_summary first.")
+        (args.text_model, args.text_layer, args.ctx_words,
+         args.audio_model, args.audio_layer, args.tr_win) = pick_best_from_summary(summary_path)
     fmris = load_fmri()
     df = load_align_df()
     n_trs = fmris[75].shape[0]
@@ -61,6 +97,7 @@ def main() -> int:
 
     text_features = np.load(text_file)
     audio_features = np.load(audio_file)
+    print("[fusion] features loaded", flush=True)
 
     text_tr = align_word_features_to_tr(df, text_features, n_trs, pooling="mean")
 
@@ -75,6 +112,7 @@ def main() -> int:
         fused = pca.fit_transform(fused)
 
     fir = build_fir(fused, window=args.fir_window, offset=args.fir_offset)
+    print("[fusion] model fit start", flush=True)
     corr_means, corr_map = run_cv_multi_subjects(
         X=fir,
         fmris=fmris,
@@ -91,9 +129,7 @@ def main() -> int:
     stats = summarize(corr_means)
     append_log(log_path, layer=0, stats=stats)
     np.save(out_dir / "corr.npy", corr_map)
-
-    if args.save_corr_map:
-        save_corr_map(corr_map, atlas_root=ATLAS_ROOT, out_file=out_dir / "corr.png")
+    print("[fusion] model fit done", flush=True)
 
     return 0
 
