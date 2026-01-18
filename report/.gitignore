@@ -1,0 +1,14 @@
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.toc
+*.xdv
+*.synctex.gz
+
+# Local paper PDFs (keep `main.pdf` tracked if desired)
+refs/*.pdf
