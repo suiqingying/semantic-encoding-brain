@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 
 import numpy as np
 import torch
@@ -10,7 +9,6 @@ from transformers import AutoTokenizer, AutoModel
 
 from src.config import (
     RESULTS_ROOT,
-    ATLAS_ROOT,
     DEFAULT_PCA_DIM,
     DEFAULT_FIR_WINDOW,
     DEFAULT_FIR_OFFSET,
@@ -27,7 +25,6 @@ from src.text_pipeline import (
     save_layer_features,
 )
 from src.modeling import build_fir, run_cv_multi_subjects, summarize, append_log
-from src.viz import save_corr_map
 from src.utils import get_tokenizer_valid_len
 
 
@@ -35,10 +32,74 @@ def safe_name(model_name: str) -> str:
     return model_name.replace("/", "_")
 
 
+def get_num_layers(model: torch.nn.Module) -> int:
+    cfg = model.config
+    for attr in ("num_hidden_layers", "n_layer", "num_layers", "encoder_layers", "decoder_layers"):
+        if hasattr(cfg, attr):
+            return int(getattr(cfg, attr))
+    raise ValueError(f"Cannot infer num layers from config: {cfg.__class__.__name__}")
+
+
+def resolve_layers(model: torch.nn.Module, strategy: str,
+                   layers: list[int] | None, n_layers: int) -> list[int]:
+    num_layers = get_num_layers(model)
+    if strategy == "relative":
+        if n_layers < 1:
+            raise ValueError("--n-layers must be >= 1 for relative strategy.")
+        picks = np.linspace(1, num_layers, num=n_layers)
+        resolved = sorted({int(round(v)) for v in picks})
+    else:
+        if not layers:
+            raise ValueError("Absolute strategy requires --layers.")
+        resolved = sorted(set(int(v) for v in layers))
+    for layer in resolved:
+        if layer < 0 or layer > num_layers:
+            raise ValueError(f"Layer {layer} out of range for model with {num_layers} layers.")
+    return resolved
+
+
+def load_text_model(model_name: str, trust_remote_code: bool) -> torch.nn.Module:
+    try:
+        return AutoModel.from_pretrained(
+            model_name,
+            output_hidden_states=True,
+            trust_remote_code=trust_remote_code,
+        )
+    except OSError as exc:
+        if "from_tf=True" in str(exc):
+            return AutoModel.from_pretrained(
+                model_name,
+                output_hidden_states=True,
+                trust_remote_code=trust_remote_code,
+                from_tf=True,
+            )
+        if "from_flax=True" in str(exc):
+            return AutoModel.from_pretrained(
+                model_name,
+                output_hidden_states=True,
+                trust_remote_code=trust_remote_code,
+                from_flax=True,
+            )
+        raise
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Text models encoding pipeline")
-    parser.add_argument("--models", nargs="+", required=True, help="文本模型列表")
-    parser.add_argument("--layers", nargs="+", type=int, required=True, help="层列表")
+    parser.add_argument(
+        "--models",
+        nargs="+",
+        default=["gpt2", "bert-base-uncased", "roberta-base"],
+        help="文本模型列表",
+    )
+    parser.add_argument(
+        "--layers",
+        nargs="+",
+        type=int,
+        help="层列表",
+    )
+    parser.add_argument("--layer-strategy", choices=["absolute", "relative"],
+                        default="relative", help="层选择策略")
+    parser.add_argument("--n-layers", type=int, default=5, help="相对层数量")
     parser.add_argument("--ctx-words", type=int, default=200, help="上下文窗口大小")
     parser.add_argument("--pooling", type=str, default="last", choices=["mean", "last"],
                         help="token pooling方式")
@@ -49,7 +110,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--fir-offset", type=int, default=DEFAULT_FIR_OFFSET, help="FIR 偏移")
     parser.add_argument("--log-file", type=str, default="log.txt", help="日志文件名")
     parser.add_argument("--trust-remote-code", action="store_true", help="使用 trust_remote_code")
-    parser.add_argument("--save-corr-map", action="store_true", help="保存皮层相关图")
     parser.add_argument("--save-aligned", action="store_true", help="保存对齐后的TR特征")
     return parser.parse_args()
 
@@ -63,13 +123,19 @@ def main() -> int:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     for model_name in args.models:
+        print(f"[text] model start: {model_name}", flush=True)
         model_dir = RESULTS_ROOT / "text" / safe_name(model_name) / f"win{args.ctx_words}"
         feature_dir = model_dir / "features"
         log_path = model_dir / args.log_file
 
-        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=args.trust_remote_code)
-        text_model = AutoModel.from_pretrained(model_name, output_hidden_states=True, trust_remote_code=args.trust_remote_code)
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_name, trust_remote_code=args.trust_remote_code
+        )
+        if getattr(tokenizer, "add_prefix_space", None) is not None:
+            tokenizer.add_prefix_space = True
+        text_model = load_text_model(model_name, args.trust_remote_code)
         text_model = text_model.to(device)
+        layers = resolve_layers(text_model, args.layer_strategy, args.layers, args.n_layers)
 
         valid_len, _ = get_tokenizer_valid_len(tokenizer)
         if args.ctx_words > valid_len:
@@ -80,16 +146,20 @@ def main() -> int:
             tokens=tokens,
             tokenizer=tokenizer,
             model=text_model,
-            layers=args.layers,
+            layers=layers,
             device=device,
             batch_size=args.batch_size,
             autocast=args.autocast,
             pooling=args.pooling,
         )
-        save_layer_features(layer_features, feature_dir,
-                            prefix=f"text_{safe_name(model_name)}_win{args.ctx_words}")
+        save_layer_features(
+            layer_features,
+            feature_dir,
+            prefix=f"text_{safe_name(model_name)}_win{args.ctx_words}",
+        )
 
         for layer, features in layer_features.items():
+            print(f"[text] model={model_name} layer={layer} start", flush=True)
             aligned = align_word_features_to_tr(df, features, n_trs, pooling="mean")
             if args.save_aligned:
                 np.save(model_dir / f"aligned_layer{layer}.npy", aligned)
@@ -107,11 +177,9 @@ def main() -> int:
             )
             stats = summarize(corr_means)
             append_log(log_path, layer, stats)
-
             np.save(model_dir / f"corr_layer{layer}.npy", corr_map)
-            if args.save_corr_map:
-                out_img = model_dir / f"corr_layer{layer}.png"
-                save_corr_map(corr_map, atlas_root=ATLAS_ROOT, out_file=out_img)
+            print(f"[text] model={model_name} layer={layer} done", flush=True)
+        print(f"[text] model done: {model_name}", flush=True)
 
     return 0
 

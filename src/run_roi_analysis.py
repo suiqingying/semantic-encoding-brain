@@ -39,6 +39,7 @@ def main() -> int:
 
     outputs = []
     if args.corr_map:
+        print(f"[roi] processing: {args.corr_map}", flush=True)
         corr_map = np.load(args.corr_map)
         df = roi_summary(corr_map, rois)
         df["source"] = Path(args.corr_map).as_posix()
@@ -46,6 +47,7 @@ def main() -> int:
 
     if args.input_dir:
         for path in Path(args.input_dir).glob("corr_layer*.npy"):
+            print(f"[roi] processing: {path}", flush=True)
             corr_map = np.load(path)
             df = roi_summary(corr_map, rois)
             df["source"] = path.as_posix()

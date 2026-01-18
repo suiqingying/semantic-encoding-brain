@@ -39,6 +39,7 @@ def main() -> int:
 
     corr_means = []
     for sub in SUBJECTS:
+        print(f"[nonlinear] subject start: {sub}", flush=True)
         y = fmris[sub][excluded_start:-excluded_end]
         fold_corrs = []
         for train_idx, test_idx in kfold.split(X):
@@ -46,8 +47,9 @@ def main() -> int:
             model.fit(X[train_idx], y[train_idx])
             y_pred = model.predict(X[test_idx])
             corr = corr_with_np(y_pred, y[test_idx])
-            fold_corrs.append(np.nanmean(corr))
+        fold_corrs.append(np.nanmean(corr))
         corr_means.append(float(np.mean(fold_corrs)))
+        print(f"[nonlinear] subject done: {sub}", flush=True)
 
     arr = np.array(corr_means)
     out_path = Path(args.out)
