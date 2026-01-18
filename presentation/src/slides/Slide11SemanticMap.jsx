@@ -14,8 +14,8 @@ export default function Slide11SemanticMap() {
       try {
         setLoadError(null)
         const [colorsResp, statsResp] = await Promise.all([
-          fetch('/assets/corr_layer12_roi_colors_lh.json'),
-          fetch('/assets/corr_layer12_roi_stats_lh.json'),
+          fetch(`${import.meta.env.BASE_URL}assets/corr_layer12_roi_colors_lh.json`),
+          fetch(`${import.meta.env.BASE_URL}assets/corr_layer12_roi_stats_lh.json`),
         ])
         if (!colorsResp.ok) throw new Error(`HTTP ${colorsResp.status}`)
         if (!statsResp.ok) throw new Error(`HTTP ${statsResp.status}`)
@@ -89,8 +89,8 @@ export default function Slide11SemanticMap() {
         <div style={{ position: 'relative', height: 520 }}>
           <Brain2DMap
             ariaLabel="Semantic ROI map"
-            surfaceUrl="/atlas/tpl-fsaverage_den-41k_hemi-L_inflated.surf.gii"
-            labelUrl="/atlas/tpl-fsaverage6_hemi-L_desc-MMP_dseg.label.gii"
+            surfaceUrl={`${import.meta.env.BASE_URL}atlas/tpl-fsaverage_den-41k_hemi-L_inflated.surf.gii`}
+            labelUrl={`${import.meta.env.BASE_URL}atlas/tpl-fsaverage6_hemi-L_desc-MMP_dseg.label.gii`}
             roiColorById={roiColors || undefined}
             onSelect={(id) => {
               if (id != null) setSelectedRoi(id)

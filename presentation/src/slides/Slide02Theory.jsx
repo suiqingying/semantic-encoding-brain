@@ -20,7 +20,7 @@ export default function Slide03Theory() {
 
         <div className="nordCenter">
           <img
-            src="/assets/duiqi.png"
+            src={`${import.meta.env.BASE_URL}assets/duiqi.png`}
             alt="对齐示意图"
             style={{
               width: '100%',
