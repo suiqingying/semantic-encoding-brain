@@ -203,6 +203,10 @@ def extract_audio_features(audio_chunks: torch.Tensor,  # 输入：音频chunks�
                 sampling_rate=sampling_rate,
                 return_tensors="pt",
             )
+            tokenizer = getattr(processor, "tokenizer", None)
+            if tokenizer and tokenizer.eos_token_id is not None:
+                dec_ids = torch.tensor([[tokenizer.eos_token_id]], dtype=torch.long)
+                inputs["decoder_input_ids"] = dec_ids.repeat(len(padded_arrays), 1)
         else:
             inputs = processor(
                 audio_arrays,
