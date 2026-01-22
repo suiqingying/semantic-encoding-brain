@@ -39,7 +39,10 @@ def main() -> int:
     if not feature_paths:
         raise FileNotFoundError("未找到 aligned_layer*.npy，请先运行文本特征提取。")
 
-    kfold = KFold(n_splits=DEFAULT_KFOLD, shuffle=False)
+    if DEFAULT_KFOLD <= 1:
+        kfold = None  # 单次划分
+    else:
+        kfold = KFold(n_splits=DEFAULT_KFOLD, shuffle=False)
     excluded_start, excluded_end = 10, 10
 
     out_path = Path(args.out)
@@ -55,14 +58,25 @@ def main() -> int:
         for sub in SUBJECTS:
             print(f"[nonlinear] subject start: {sub}", flush=True)
             y = fmris[sub][excluded_start:-excluded_end]
-            fold_corrs = []
-            for train_idx, test_idx in kfold.split(X):
+            if kfold is None:
+                n = X.shape[0]
+                split = int(n * 0.8)
+                if split <= 0 or split >= n:
+                    raise ValueError("样本量不足以划分训练/测试集。")
                 model = KernelRidge(alpha=args.alpha, kernel=args.kernel, gamma=args.gamma)
-                model.fit(X[train_idx], y[train_idx])
-                y_pred = model.predict(X[test_idx])
-                corr = corr_with_np(y_pred, y[test_idx])
-                fold_corrs.append(np.nanmean(corr))
-            corr_means.append(float(np.mean(fold_corrs)))
+                model.fit(X[:split], y[:split])
+                y_pred = model.predict(X[split:])
+                corr = corr_with_np(y_pred, y[split:])
+                corr_means.append(float(np.nanmean(corr)))
+            else:
+                fold_corrs = []
+                for train_idx, test_idx in kfold.split(X):
+                    model = KernelRidge(alpha=args.alpha, kernel=args.kernel, gamma=args.gamma)
+                    model.fit(X[train_idx], y[train_idx])
+                    y_pred = model.predict(X[test_idx])
+                    corr = corr_with_np(y_pred, y[test_idx])
+                    fold_corrs.append(np.nanmean(corr))
+                corr_means.append(float(np.mean(fold_corrs)))
             print(f"[nonlinear] subject done: {sub}", flush=True)
 
         arr = np.array(corr_means)

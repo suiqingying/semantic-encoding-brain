@@ -24,7 +24,6 @@ from src.data import load_fmri, load_align_df
 from src.text_pipeline import align_word_features_to_tr
 from src.modeling import build_fir, run_cv_multi_subjects, summarize, append_log
 
-
 def safe_name(model_name: str) -> str:
     return model_name.replace("/", "_")
 
@@ -78,7 +77,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--audio-layers", nargs="+", type=int,
-        default=[1, 3, 6, 9, 12],
+        # 与 run_audio_models 默认层保持一致，避免缺失文件造成 skip
+        default=[1, 4, 6, 9, 12],
         help="音频层列表",
     )
     parser.add_argument(
@@ -88,7 +88,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--tr-win", nargs="+", type=int,
-        default=[1, 2, 3, 6],
+        # 与已提取的音频窗口对齐
+        default=[1, 2, 3],
         help="音频TR窗口列表",
     )
     parser.add_argument("--pca-dim", type=int, default=DEFAULT_PCA_DIM, help="PCA 维度")
@@ -109,14 +110,14 @@ def main() -> int:
     fmris = load_fmri()
     df = load_align_df()
     n_trs = fmris[75].shape[0]
-
     for ctx_words in ctx_list:
         for tr_win in tr_win_list:
             for text_model in text_models:
                 for audio_model in audio_models:
                     for text_layer in text_layers:
                         for audio_layer in audio_layers:
-                            print(f"[fusion] ctx={ctx_words} tr={tr_win} text={text_model}@{text_layer} audio={audio_model}@{audio_layer}", flush=True)
+                            combo_tag = f"ctx={ctx_words} tr={tr_win} text={text_model}@{text_layer} audio={audio_model}@{audio_layer}"
+                            print(f"[fusion] {combo_tag} start", flush=True)
 
                             text_dir = RESULTS_ROOT / "text" / safe_name(text_model) / f"win{ctx_words}" / "features"
                             audio_dir = RESULTS_ROOT / "audio" / safe_name(audio_model) / f"{tr_win}TR" / "features"
@@ -125,7 +126,7 @@ def main() -> int:
                             audio_file = audio_dir / f"audio_{safe_name(audio_model)}_win{tr_win}TR_layer{audio_layer}_features.npy"
 
                             if not text_file.exists() or not audio_file.exists():
-                                print(f"[fusion] skip missing features: {text_file} or {audio_file}", flush=True)
+                                print(f"[fusion] skip missing: {text_file} or {audio_file}", flush=True)
                                 continue
 
                             text_features = np.load(text_file)
@@ -166,7 +167,7 @@ def main() -> int:
                                 f.write(f"范围: [{stats.min:.4f}, {stats.max:.4f}]\n")
                                 f.write(f"中位数: {stats.median:.4f}\n\n")
                             np.save(out_dir / f"corr_{layer_tag}.npy", corr_map)
-                            print(f"[fusion] done {layer_tag}", flush=True)
+                            print(f"[fusion] {combo_tag} done", flush=True)
 
     return 0
 
