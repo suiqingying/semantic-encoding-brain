@@ -140,7 +140,9 @@ def extract_multimodal_layers(audio_chunks: torch.Tensor,
     is_whisper = getattr(model.config, "model_type", "") == "whisper"
     has_dual = hasattr(model, "get_text_features") and hasattr(model, "get_audio_features")
 
-    for _, (audio_arrays, texts) in enumerate(dataloader):
+    for idx, (audio_arrays, texts) in enumerate(dataloader):
+        if (idx + 1) % 10 == 0 or idx == 0:
+            print(f"[multimodal] batch {idx + 1}/{len(dataloader)}", flush=True)
         if is_whisper:
             audio_inputs = processor(
                 audio_arrays,
