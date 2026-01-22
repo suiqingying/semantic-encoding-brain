@@ -3,8 +3,12 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import sys
 import numpy as np
 import pandas as pd
+
+# 确保优先使用当前仓库的 src，而不是全局安装的同名包
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.config import ATLAS_ROOT
 from src.utils import extract_hemi_data_from_files

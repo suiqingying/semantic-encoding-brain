@@ -7,6 +7,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch
 from matplotlib import font_manager
+import numpy as np
 
 matplotlib.use("Agg")
 
@@ -51,6 +52,11 @@ def _read_summary(path: Path) -> dict:
         "tool_accuracy": float(row["tool_accuracy"]),
         "answer_accuracy": float(row["answer_accuracy"]),
     }
+
+
+def _read_encoding_summary(path: Path) -> list[dict]:
+    with path.open("r", encoding="utf-8") as handle:
+        return list(csv.DictReader(handle))
 
 
 def make_accuracy_bar(reports_dir: Path, figures_dir: Path) -> None:
@@ -131,6 +137,154 @@ def _save_fig(fig: plt.Figure, figures_dir: Path, name: str) -> None:
     fig.savefig(figures_dir / f"{name}.pdf", facecolor="white", bbox_inches="tight")
     fig.savefig(figures_dir / f"{name}.png", facecolor="white", bbox_inches="tight")
     plt.close(fig)
+
+
+def _pick_best_by_group(rows: list[dict], group: str) -> list[tuple[str, float]]:
+    best: dict[str, float] = {}
+    for row in rows:
+        log = row.get("log", "")
+        if f"/{group}/" not in log:
+            continue
+        try:
+            mean_val = float(row.get("mean", "nan"))
+        except ValueError:
+            continue
+        if mean_val != mean_val:
+            continue
+        model_key = log.split(f"/{group}/")[1].split("/")[0]
+        best[model_key] = max(best.get(model_key, float("-inf")), mean_val)
+    return sorted(best.items(), key=lambda kv: -kv[1])
+
+
+def make_encoding_best_bars(summary_csv: Path, figures_dir: Path) -> None:
+    rows = _read_encoding_summary(summary_csv)
+    has_cjk = _set_plot_style()
+
+    plt.rcParams.update(
+        {
+            "font.size": 11,
+            "axes.titlesize": 12,
+            "axes.labelsize": 11,
+            "figure.dpi": 200,
+        }
+    )
+
+    specs = [
+        ("text", "文本模型最佳层（全脑均值相关）", "Text models: best layer (mean corr)", "text_best"),
+        ("audio", "音频模型最佳层（全脑均值相关）", "Audio models: best layer (mean corr)", "audio_best"),
+        ("multimodal", "多模态模型最佳层（全脑均值相关）", "Multimodal models: best layer (mean corr)", "multimodal_best"),
+    ]
+    for group, title_cn, title_en, out_name in specs:
+        pairs = _pick_best_by_group(rows, group)
+        if not pairs:
+            continue
+        labels = [p[0] for p in pairs]
+        vals = [p[1] for p in pairs]
+        colors = [NORD["blue"], NORD["teal"], NORD["orange"], NORD["purple"], NORD["green"]] * 10
+        fig, ax = plt.subplots(figsize=(9.0, 4.2))
+        bars = ax.bar(
+            labels,
+            vals,
+            color=colors[: len(labels)],
+            alpha=0.88,
+            edgecolor=NORD["snow"],
+            linewidth=1.0,
+        )
+        ax.set_ylabel("相关系数" if has_cjk else "Correlation")
+        ax.set_title(title_cn if has_cjk else title_en, fontweight="bold", color=NORD["dark"])
+        ax.grid(axis="y", alpha=0.25, linestyle="--")
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.bar_label(bars, labels=[f"{v:.3f}" for v in vals], padding=3, color=NORD["dark"], fontsize=9)
+        _save_fig(fig, figures_dir, out_name)
+
+
+def make_roi_top_bars(roi_csv: Path, figures_dir: Path) -> None:
+    if not roi_csv.exists():
+        return
+    import pandas as pd
+
+    has_cjk = _set_plot_style()
+    roi = pd.read_csv(roi_csv)
+
+    def plot(substring: str, name: str, title: str) -> None:
+        df = roi[roi["source"].astype(str).str.contains(substring)]
+        if df.empty:
+            return
+        top = df.groupby("roi")["corr"].mean().sort_values(ascending=False).head(20)
+        fig, ax = plt.subplots(figsize=(9.0, 4.2))
+        top.plot(kind="bar", ax=ax, color=NORD["blue"], alpha=0.88, edgecolor=NORD["snow"], linewidth=0.8)
+        ax.set_ylabel("相关系数" if has_cjk else "Correlation")
+        ax.set_title(title, fontweight="bold", color=NORD["dark"])
+        ax.grid(axis="y", alpha=0.25, linestyle="--")
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        _save_fig(fig, figures_dir, name)
+
+    plot("results/audio/microsoft_wavlm-base-plus/6TR/corr_layer9.npy", "roi_wavlm6tr_l9", "ROI Top20: WavLM 6TR layer9")
+    plot("results/multimodal/openai_whisper-base/6TR/corr_layer2.npy", "roi_whisper6tr_l2", "ROI Top20: Whisper-base 6TR layer2")
+    plot("results/text/roberta-base/win200/corr_layer4.npy", "roi_roberta_l4", "ROI Top20: RoBERTa layer4")
+
+
+def _iter_encoding_rows(rows: list[dict], group: str):
+    for row in rows:
+        log = row.get("log", "")
+        if f"/{group}/" not in log:
+            continue
+        try:
+            mean_val = float(row.get("mean", "nan"))
+            layer = int(float(row.get("layer", "nan")))
+        except ValueError:
+            continue
+        if mean_val != mean_val:
+            continue
+        yield log, layer, mean_val
+
+
+def make_window_trend(summary_csv: Path, figures_dir: Path) -> None:
+    rows = _read_encoding_summary(summary_csv)
+    has_cjk = _set_plot_style()
+    plt.rcParams.update({"font.size": 11, "axes.titlesize": 12, "axes.labelsize": 11, "figure.dpi": 200})
+
+    def parse_tr(setting: str) -> int | None:
+        if setting.endswith("TR"):
+            try:
+                return int(setting[:-2])
+            except ValueError:
+                return None
+        return None
+
+    for group, out_name, title_cn, title_en in [
+        ("audio", "audio_tr_window_trend", "音频模型：不同 TR 窗口的最佳层性能", "Audio: best-layer performance across TR windows"),
+        ("multimodal", "multimodal_tr_window_trend", "多模态模型：不同 TR 窗口的最佳层性能", "Multimodal: best-layer performance across TR windows"),
+    ]:
+        by_model: dict[str, dict[int, float]] = {}
+        for log, layer, mean_val in _iter_encoding_rows(rows, group):
+            tail = log.split(f"/{group}/")[1]
+            model = tail.split("/")[0]
+            setting = tail.split("/")[1]  # e.g. 6TR
+            tr = parse_tr(setting)
+            if tr is None:
+                continue
+            by_model.setdefault(model, {})
+            by_model[model][tr] = max(by_model[model].get(tr, float("-inf")), mean_val)
+
+        if not by_model:
+            continue
+
+        trs = sorted({t for m in by_model.values() for t in m.keys()})
+        fig, ax = plt.subplots(figsize=(9.0, 4.4))
+        colors = [NORD["blue"], NORD["teal"], NORD["orange"], NORD["purple"], NORD["green"]]
+        for i, (model, series) in enumerate(sorted(by_model.items())):
+            ys = [series.get(t, np.nan) for t in trs]
+            ax.plot(trs, ys, marker="o", linewidth=2.0, color=colors[i % len(colors)], label=model)
+
+        ax.set_xlabel("TR window")
+        ax.set_ylabel("相关系数" if has_cjk else "Correlation")
+        ax.set_title(title_cn if has_cjk else title_en, fontweight="bold", color=NORD["dark"])
+        ax.grid(alpha=0.25, linestyle="--")
+        ax.legend(frameon=False, ncol=2, fontsize=9)
+        _save_fig(fig, figures_dir, out_name)
 
 
 def make_sentiment_bar(figures_dir: Path) -> None:
@@ -346,6 +500,18 @@ def make_ui_flow(figures_dir: Path) -> None:
 
 
 def main() -> None:
+    repo_root = Path(__file__).resolve().parents[2]
+    figures_dir = repo_root / "report" / "figures"
+
+    encoding_summary = repo_root / "results" / "summary.csv"
+    roi_csv = repo_root / "results" / "roi.csv"
+    if encoding_summary.exists():
+        make_encoding_best_bars(encoding_summary, figures_dir)
+        make_roi_top_bars(roi_csv, figures_dir)
+        make_window_trend(encoding_summary, figures_dir)
+        return
+
+    # fallback: original demo figures (kept for compatibility)
     root = Path(__file__).resolve().parent.parent  # final_report/
     reports_dir = root.parent / "reports"
     figures_dir = root / "figures"
