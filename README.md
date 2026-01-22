@@ -32,23 +32,19 @@
 ## 服务器端运行（只计算，不作图）
 在项目根目录逐行执行以下命令（每行含义在上一行注释）：
 ```bash
-# 1) 文本多模型+多层评估
+# 1) 文本多模型+多层评估（默认保存 aligned）
 python -m src.run_text_models
 # 2) 音频多模型+多层评估（含多 TR 窗口）
 python -m src.run_audio_models
 # 3) 多模态模型多层评估
 python -m src.run_multimodal_models
-# 4) 汇总结果，生成 results/summary.csv
-python -m src.run_summary --out results/summary.csv
-# 5) 融合：自动读取 summary.csv 中最优文本/音频模型与层
+# 4) 融合（多文本/多音频/多层/多窗口遍历）
 python -m src.run_multimodal_fusion
-# 6) 生成 aligned 特征（用于非线性模型）
-python -m src.run_text_models --save-aligned
-# 7) 非线性模型（需指定 aligned 文件路径）
-python -m src.run_nonlinear_model --aligned-features results/text/gpt2/win200/aligned_layer1.npy
-# 8) ROI 统计
-python -m src.run_roi_analysis --input-dir results/text/gpt2/win200 --out results/roi_text_gpt2.csv
-# 9) 重新汇总
+# 5) 非线性模型（自动遍历 results/text/**/aligned_layer*.npy）
+python -m src.run_nonlinear_model
+# 6) ROI 统计（自动扫描 corr_layer*.npy）
+python -m src.run_roi_analysis
+# 7) 汇总
 python -m src.run_summary --out results/summary.csv
 ```
 

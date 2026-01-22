@@ -14,7 +14,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="ROI-level preference analysis")
     parser.add_argument("--corr-map", type=str, default=None, help="corr_map .npy 文件")
     parser.add_argument("--input-dir", type=str, default=None, help="包含 corr_layer*.npy 的目录")
-    parser.add_argument("--out", type=str, required=True, help="输出 CSV")
+    parser.add_argument("--out", type=str, default="results/roi.csv", help="输出 CSV")
     return parser.parse_args()
 
 
@@ -38,23 +38,26 @@ def main() -> int:
     rois = load_rois(ATLAS_ROOT)
 
     outputs = []
+    sources: list[Path] = []
+
     if args.corr_map:
-        print(f"[roi] processing: {args.corr_map}", flush=True)
-        corr_map = np.load(args.corr_map)
+        sources.append(Path(args.corr_map))
+    if args.input_dir:
+        sources.extend(Path(args.input_dir).glob("corr_layer*.npy"))
+    if not sources:
+        sources.extend(Path("results").rglob("corr_layer*.npy"))
+
+    for path in sources:
+        if not path.exists():
+            continue
+        print(f"[roi] processing: {path}", flush=True)
+        corr_map = np.load(path)
         df = roi_summary(corr_map, rois)
-        df["source"] = Path(args.corr_map).as_posix()
+        df["source"] = path.as_posix()
         outputs.append(df)
 
-    if args.input_dir:
-        for path in Path(args.input_dir).glob("corr_layer*.npy"):
-            print(f"[roi] processing: {path}", flush=True)
-            corr_map = np.load(path)
-            df = roi_summary(corr_map, rois)
-            df["source"] = path.as_posix()
-            outputs.append(df)
-
     if not outputs:
-        raise ValueError("必须提供 --corr-map 或 --input-dir")
+        raise ValueError("未找到 corr_layer*.npy")
 
     out_df = pd.concat(outputs, ignore_index=True)
     out_path = Path(args.out)

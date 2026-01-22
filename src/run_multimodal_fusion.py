@@ -61,12 +61,36 @@ def pick_best_from_summary(summary_path: Path) -> tuple[str, int, int, str, int,
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Multimodal fusion (text + audio)")
-    parser.add_argument("--text-model", default=None, help="文本模型")
-    parser.add_argument("--audio-model", default=None, help="音频模型")
-    parser.add_argument("--text-layer", type=int, default=None, help="文本层")
-    parser.add_argument("--audio-layer", type=int, default=None, help="音频层")
-    parser.add_argument("--ctx-words", type=int, default=None, help="文本上下文窗口")
-    parser.add_argument("--tr-win", type=int, default=None, help="音频TR窗口")
+    parser.add_argument(
+        "--text-models", nargs="+",
+        default=["gpt2", "bert-base-uncased", "roberta-base"],
+        help="文本模型列表",
+    )
+    parser.add_argument(
+        "--audio-models", nargs="+",
+        default=["facebook/wav2vec2-base-960h", "microsoft/wavlm-base-plus", "facebook/hubert-base-ls960"],
+        help="音频模型列表",
+    )
+    parser.add_argument(
+        "--text-layers", nargs="+", type=int,
+        default=[1, 3, 6, 9, 12],
+        help="文本层列表",
+    )
+    parser.add_argument(
+        "--audio-layers", nargs="+", type=int,
+        default=[1, 3, 6, 9, 12],
+        help="音频层列表",
+    )
+    parser.add_argument(
+        "--ctx-words", nargs="+", type=int,
+        default=[200],
+        help="文本上下文窗口列表",
+    )
+    parser.add_argument(
+        "--tr-win", nargs="+", type=int,
+        default=[1, 2, 3, 6],
+        help="音频TR窗口列表",
+    )
     parser.add_argument("--pca-dim", type=int, default=DEFAULT_PCA_DIM, help="PCA 维度")
     parser.add_argument("--fir-window", type=int, default=DEFAULT_FIR_WINDOW, help="FIR 窗口")
     parser.add_argument("--fir-offset", type=int, default=DEFAULT_FIR_OFFSET, help="FIR 偏移")
@@ -75,61 +99,74 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    if any(v is None for v in [args.text_model, args.audio_model, args.text_layer,
-                               args.audio_layer, args.ctx_words, args.tr_win]):
-        summary_path = RESULTS_ROOT / "summary.csv"
-        if not summary_path.exists():
-            raise FileNotFoundError("results/summary.csv not found. Run run_summary first.")
-        (args.text_model, args.text_layer, args.ctx_words,
-         args.audio_model, args.audio_layer, args.tr_win) = pick_best_from_summary(summary_path)
+    text_models = args.text_models
+    audio_models = args.audio_models
+    text_layers = args.text_layers
+    audio_layers = args.audio_layers
+    ctx_list = args.ctx_words
+    tr_win_list = args.tr_win
+
     fmris = load_fmri()
     df = load_align_df()
     n_trs = fmris[75].shape[0]
 
-    text_dir = RESULTS_ROOT / "text" / safe_name(args.text_model) / f"win{args.ctx_words}" / "features"
-    audio_dir = RESULTS_ROOT / "audio" / safe_name(args.audio_model) / f"{args.tr_win}TR" / "features"
+    for ctx_words in ctx_list:
+        for tr_win in tr_win_list:
+            for text_model in text_models:
+                for audio_model in audio_models:
+                    for text_layer in text_layers:
+                        for audio_layer in audio_layers:
+                            print(f"[fusion] ctx={ctx_words} tr={tr_win} text={text_model}@{text_layer} audio={audio_model}@{audio_layer}", flush=True)
 
-    text_file = text_dir / f"text_{safe_name(args.text_model)}_win{args.ctx_words}_layer{args.text_layer}_features.npy"
-    audio_file = audio_dir / f"audio_{safe_name(args.audio_model)}_win{args.tr_win}TR_layer{args.audio_layer}_features.npy"
+                            text_dir = RESULTS_ROOT / "text" / safe_name(text_model) / f"win{ctx_words}" / "features"
+                            audio_dir = RESULTS_ROOT / "audio" / safe_name(audio_model) / f"{tr_win}TR" / "features"
 
-    if not text_file.exists() or not audio_file.exists():
-        raise FileNotFoundError("缺少特征文件，请先运行文本与音频特征提取脚本。")
+                            text_file = text_dir / f"text_{safe_name(text_model)}_win{ctx_words}_layer{text_layer}_features.npy"
+                            audio_file = audio_dir / f"audio_{safe_name(audio_model)}_win{tr_win}TR_layer{audio_layer}_features.npy"
 
-    text_features = np.load(text_file)
-    audio_features = np.load(audio_file)
-    print("[fusion] features loaded", flush=True)
+                            if not text_file.exists() or not audio_file.exists():
+                                print(f"[fusion] skip missing features: {text_file} or {audio_file}", flush=True)
+                                continue
 
-    text_tr = align_word_features_to_tr(df, text_features, n_trs, pooling="mean")
+                            text_features = np.load(text_file)
+                            audio_features = np.load(audio_file)
 
-    scaler_text = StandardScaler()
-    scaler_audio = StandardScaler()
-    text_std = scaler_text.fit_transform(text_tr)
-    audio_std = scaler_audio.fit_transform(audio_features)
+                            text_tr = align_word_features_to_tr(df, text_features, n_trs, pooling="mean")
 
-    fused = np.concatenate([text_std, audio_std], axis=1)
-    if args.pca_dim and args.pca_dim < fused.shape[1]:
-        pca = PCA(n_components=args.pca_dim)
-        fused = pca.fit_transform(fused)
+                            scaler_text = StandardScaler()
+                            scaler_audio = StandardScaler()
+                            text_std = scaler_text.fit_transform(text_tr)
+                            audio_std = scaler_audio.fit_transform(audio_features)
 
-    fir = build_fir(fused, window=args.fir_window, offset=args.fir_offset)
-    print("[fusion] model fit start", flush=True)
-    corr_means, corr_map = run_cv_multi_subjects(
-        X=fir,
-        fmris=fmris,
-        subjects=SUBJECTS,
-        excluded_start=10,
-        excluded_end=10,
-        alphas=DEFAULT_ALPHAS,
-        kfold=DEFAULT_KFOLD,
-    )
+                            fused = np.concatenate([text_std, audio_std], axis=1)
+                            if args.pca_dim and args.pca_dim < fused.shape[1]:
+                                pca = PCA(n_components=args.pca_dim)
+                                fused = pca.fit_transform(fused)
 
-    out_dir = RESULTS_ROOT / "fusion" / f"{safe_name(args.text_model)}__{safe_name(args.audio_model)}"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    log_path = out_dir / "log.txt"
-    stats = summarize(corr_means)
-    append_log(log_path, layer=0, stats=stats)
-    np.save(out_dir / "corr.npy", corr_map)
-    print("[fusion] model fit done", flush=True)
+                            fir = build_fir(fused, window=args.fir_window, offset=args.fir_offset)
+                            corr_means, corr_map = run_cv_multi_subjects(
+                                X=fir,
+                                fmris=fmris,
+                                subjects=SUBJECTS,
+                                excluded_start=10,
+                                excluded_end=10,
+                                alphas=DEFAULT_ALPHAS,
+                                kfold=DEFAULT_KFOLD,
+                            )
+
+                            out_dir = RESULTS_ROOT / "fusion" / f"{safe_name(text_model)}__{safe_name(audio_model)}"
+                            out_dir.mkdir(parents=True, exist_ok=True)
+                            log_path = out_dir / "log.txt"
+                            stats = summarize(corr_means)
+                            layer_tag = f"t{text_layer}_a{audio_layer}_ctx{ctx_words}_tr{tr_win}"
+                            with log_path.open("a", encoding="utf-8") as f:
+                                f.write(f"text_model={text_model}, audio_model={audio_model}, text_layer={text_layer}, audio_layer={audio_layer}, ctx_words={ctx_words}, tr_win={tr_win}\n")
+                                f.write(f"层标记: {layer_tag}\n")
+                                f.write(f"平均值: {stats.mean:.4f} ± {stats.std:.4f}\n")
+                                f.write(f"范围: [{stats.min:.4f}, {stats.max:.4f}]\n")
+                                f.write(f"中位数: {stats.median:.4f}\n\n")
+                            np.save(out_dir / f"corr_{layer_tag}.npy", corr_map)
+                            print(f"[fusion] done {layer_tag}", flush=True)
 
     return 0
 

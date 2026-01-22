@@ -8,6 +8,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from transformers import AutoFeatureExtractor, AutoModel, AutoProcessor
+import librosa
 
 from src.config import (
     RESULTS_ROOT,
@@ -186,14 +187,24 @@ def extract_multimodal_layers(audio_chunks: torch.Tensor,
                 fused = torch.cat([enc_pool, dec_pool], dim=-1)
                 hidden_states[layer_idx].append(fused.cpu().float().numpy())
         elif has_dual:
-            batch = processor(
-                text=texts,
-                audio=audio_arrays,
-                sampling_rate=sampling_rate,
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-            )
+            if getattr(model.config, "model_type", "") == "clap":
+                batch = processor(
+                    text=texts,
+                    audios=audio_arrays,
+                    sampling_rate=sampling_rate,
+                    return_tensors="pt",
+                    padding=True,
+                    truncation=True,
+                )
+            else:
+                batch = processor(
+                    text=texts,
+                    audio=audio_arrays,
+                    sampling_rate=sampling_rate,
+                    return_tensors="pt",
+                    padding=True,
+                    truncation=True,
+                )
             batch = {k: v.to(device) for k, v in batch.items()}
             with torch.autocast(device_type='cuda' if 'cuda' in str(device) else 'cpu',
                                 dtype=torch.bfloat16, enabled=autocast):
@@ -216,7 +227,12 @@ def extract_multimodal_layers(audio_chunks: torch.Tensor,
             text_mask = batch.get("attention_mask", None)
             raw_mask = batch.get("attention_mask", None)
 
-            for layer_idx in layers:
+            max_common = min(len(text_states), len(audio_states)) - 1
+            effective_layers = [l for l in layers if 0 <= l <= max_common]
+            if not effective_layers:
+                effective_layers = [max_common]
+
+            for layer_idx in effective_layers:
                 text_state = text_states[layer_idx]
                 audio_state = audio_states[layer_idx]
 
@@ -240,6 +256,12 @@ def extract_multimodal_layers(audio_chunks: torch.Tensor,
                 else:
                     audio_pool = audio_state.mean(dim=1)
 
+                # 保证拼接前形状为 [batch, hidden]
+                while audio_pool.dim() > 2:
+                    audio_pool = audio_pool.mean(dim=1)
+                while text_pool.dim() > 2:
+                    text_pool = text_pool.mean(dim=1)
+
                 fused = torch.cat([audio_pool, text_pool], dim=-1)
                 hidden_states[layer_idx].append(fused.cpu().float().numpy())
         else:
@@ -260,7 +282,6 @@ def main() -> int:
 
     for tr_win in args.tr_win:
         print(f"[multimodal] tr_win start: {tr_win}", flush=True)
-        audio_chunks = chunk_audio(wav, sr, n_trs=n_trs, tr_seconds=TR_SECONDS, tr_win=tr_win)
         text_windows = build_tr_text_windows(tr_texts, tr_win)
 
         for model_name in args.models:
@@ -277,8 +298,16 @@ def main() -> int:
             model = model.to(device)
             layers = resolve_layers(model, args.layer_strategy, args.layers, args.n_layers)
 
+            model_type = getattr(model.config, "model_type", "")
+            sr_use = sr
+            wav_use = wav
+            if model_type == "clap":
+                sr_use = 48000
+                wav_use = librosa.resample(wav, orig_sr=sr, target_sr=sr_use)
+            audio_chunks_use = chunk_audio(wav_use, sr_use, n_trs=n_trs, tr_seconds=TR_SECONDS, tr_win=tr_win)
+
             layer_features = extract_multimodal_layers(
-                audio_chunks=audio_chunks,
+                audio_chunks=audio_chunks_use,
                 text_windows=text_windows,
                 processor=processor,
                 model=model,
@@ -286,7 +315,7 @@ def main() -> int:
                 device=device,
                 batch_size=args.batch_size,
                 autocast=args.autocast,
-                sampling_rate=sr,
+                sampling_rate=sr_use,
             )
             save_layer_features(layer_features, feature_dir,
                                 prefix=f"multimodal_{safe_name(model_name)}_win{tr_win}TR")

@@ -110,7 +110,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--fir-offset", type=int, default=DEFAULT_FIR_OFFSET, help="FIR 偏移")
     parser.add_argument("--log-file", type=str, default="log.txt", help="日志文件名")
     parser.add_argument("--trust-remote-code", action="store_true", help="使用 trust_remote_code")
-    parser.add_argument("--save-aligned", action="store_true", help="保存对齐后的TR特征")
     return parser.parse_args()
 
 
@@ -161,8 +160,7 @@ def main() -> int:
         for layer, features in layer_features.items():
             print(f"[text] model={model_name} layer={layer} start", flush=True)
             aligned = align_word_features_to_tr(df, features, n_trs, pooling="mean")
-            if args.save_aligned:
-                np.save(model_dir / f"aligned_layer{layer}.npy", aligned)
+            np.save(model_dir / f"aligned_layer{layer}.npy", aligned)
             aligned = reduce_pca(aligned, args.pca_dim)
             fir = build_fir(aligned, window=args.fir_window, offset=args.fir_offset)
 
