@@ -1,0 +1,12 @@
+\chapter{音频模型结果：TR 窗口效应与最佳层比较}
+音频模型部分覆盖三种预训练声学模型，并在 1TR、2TR、3TR、6TR 四种窗口下评估多个层的编码性能。图 \ref{fig:audio_best} 给出每个音频模型在所有已完成设置中取得的最佳层均值相关。当前结果中，\texttt{microsoft/wavlm-base-plus} 在 6TR 条件下的 layer9 达到 0.0916，为音频组内最优；\texttt{facebook/wav2vec2-base-960h} 在 6TR、layer9 达到 0.0895；\texttt{facebook/hubert-base-ls960} 在 6TR、layer9 达到 0.0823。该排序在数值上与模型家族的预训练目标与结构差异一致，但报告不将其过度解释为结构因果，仅作为实证对比的结论陈述。
+
+为了进一步回答“窗口长度是否系统影响预测性能”，图 \ref{fig:audio_tr_trend} 将每个音频模型在每个 TR 窗口下的最佳层均值相关串联成趋势曲线。对于三种模型，窗口从 1TR 增至 6TR 都带来显著提升：例如 WavLM 在 1TR 的最佳均值约为 0.0316，而在 6TR 上升到 0.0916；Wav2Vec2 在 1TR 的最佳均值约为 0.0274，而在 6TR 上升到 0.0895；HuBERT 在 1TR 的最佳均值约为 0.0326，而在 6TR 上升到 0.0823。该趋势说明长时间窗的声学聚合是当前设置下提升编码性能的关键因素，且这种提升并非某一个模型的偶然现象。
+
+空间层面上，本报告需要同时满足两类展示要求：一类是“同一类别模型的脑图对照”，另一类是“最优模型的高质量脑图”。图 \ref{fig:audio_montage} 将音频类别中三种模型的最佳配置脑图并置，便于观察在相同绘图视角与色标下的分布差异；图 \ref{fig:audio_wavlm_map} 则单独展示 WavLM 的最优配置（6TR，layer9），并在图 \ref{fig:audio_wavlm_roi} 给出 ROI Top20 作为区域偏好分析的入口。由于音频模型在当前结果中整体最强，其空间分布也作为后续多模态与融合分析的基线参照，用于判断多模态表征是否在相同脑区或不同脑区带来额外增益。
+
+\InsertFig{audio_best.png}{0.86\linewidth}{音频模型最佳层的全脑均值相关系数（由 report/scripts/make\_figures.py 从 results/summary.csv 生成）。}{fig:audio_best}
+\InsertFig{audio_tr_window_trend.png}{0.92\linewidth}{音频模型在不同 TR 窗口下的最佳层性能趋势（由 report/scripts/make\_figures.py 从 results/summary.csv 聚合生成）。}{fig:audio_tr_trend}
+\InsertFig{audio_class_montage.png}{0.96\linewidth}{音频模型类别脑图对照：WavLM、Wav2Vec2、HuBERT 在各自最佳配置下的相关图（由 src/run\_plot\_corr\_maps.py 绘制并组合）。}{fig:audio_montage}
+\InsertFig{audio_microsoft_wavlm-base-plus_6TR_corr_layer9.png}{0.92\linewidth}{WavLM-base-plus（6TR，layer9）相关图可视化（由 src/run\_plot\_corr\_maps.py 从 corr\_layer9.npy 绘制）。}{fig:audio_wavlm_map}
+\InsertFig{roi_wavlm6tr_l9.png}{0.86\linewidth}{WavLM-base-plus（6TR，layer9）对应 corr map 的 ROI Top20（由 report/scripts/make\_figures.py 从 results/roi.csv 生成）。}{fig:audio_wavlm_roi}

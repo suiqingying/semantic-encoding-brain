@@ -1,0 +1,315 @@
+% !TeX program = xelatex
+% !TeX output-file = experiment_report.pdf
+\documentclass[UTF8,a4paper,12pt,fontset=none]{ctexart}
+
+% ===================== 1. 基础页面设置 =====================
+\usepackage[a4paper,
+  top=2.8cm, bottom=2.8cm, left=2.4cm, right=2.4cm,
+  headheight=20pt, marginparwidth=2cm
+]{geometry}
+\usepackage{setspace}
+\setstretch{1.45}
+\usepackage{indentfirst}
+\setlength{\parindent}{2em}
+\usepackage{microtype}
+\usepackage{enumitem}
+\setlist{nosep}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{float}
+
+% ===================== 2. 字体设置 =====================
+\usepackage{fontspec}
+\newcommand{\LatinMainPref}{TeX Gyre Pagella}
+\newcommand{\LatinSansPref}{Noto Sans}
+\newcommand{\LatinMonoPref}{JetBrains Mono}
+\newcommand{\CJKMainPref}{Noto Serif CJK SC}
+\newcommand{\CJKSansPref}{Noto Sans CJK SC}
+\IfFontExistsTF{\LatinMainPref}{\setmainfont{\LatinMainPref}}{\setmainfont{Latin Modern Roman}}
+\IfFontExistsTF{\LatinSansPref}{\setsansfont{\LatinSansPref}}{\setsansfont{Latin Modern Sans}}
+\IfFontExistsTF{\LatinMonoPref}{\setmonofont{\LatinMonoPref}}{\setmonofont{Latin Modern Mono}}
+\IfFontExistsTF{\CJKMainPref}{\setCJKmainfont{\CJKMainPref}}{\setCJKmainfont{FandolSong-Regular}}
+\IfFontExistsTF{\CJKSansPref}{\setCJKsansfont{\CJKSansPref}}{\setCJKsansfont{FandolHei-Regular}}
+\setCJKmonofont{\CJKSansPref}
+\IfFontExistsTF{\CJKSansPref}{
+  \newCJKfontfamily{\TitleCJK}{\CJKSansPref}[FakeBold=2]
+}{
+  \newCJKfontfamily{\TitleCJK}{FandolHei-Regular}[FakeBold=2]
+}
+
+% ===================== 3. 高级配色方案 =====================
+\usepackage{xcolor}
+\definecolor{BrandColor}{HTML}{005F6B}
+\definecolor{AccentColor}{HTML}{D97757}
+\definecolor{DarkText}{HTML}{1A1C20}
+\definecolor{LightGrayBG}{HTML}{F4F6F7}
+\definecolor{SectionNum}{HTML}{8BA6AC}
+\colorlet{Primary}{BrandColor}
+\colorlet{Secondary}{BrandColor!85!black}
+\colorlet{Ink}{DarkText}
+
+% ===================== 4. 图形与视觉组件 =====================
+\usepackage{graphicx}
+\usepackage{caption}
+\captionsetup{font={small,sf,color=Ink!80},labelfont={bf,color=BrandColor},labelsep=quad}
+% 编译工作目录为仓库根目录，因此这里使用 report 下的相对路径
+\graphicspath{{report/figures/}{report/figures/brainmaps/}}
+\usepackage{tikz}
+\usetikzlibrary{shapes, shadows, positioning, calc, backgrounds, fadings}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins, breakable}
+
+\newtcolorbox{AbstractBox}{
+  enhanced,
+  breakable,
+  colback=BrandColor!4,
+  colframe=BrandColor,
+  coltitle=BrandColor,
+  fonttitle=\TitleCJK\bfseries\large,
+  title={摘\quad 要},
+  detach title,
+  before upper={\tcbtitle\par\vspace{0.5em}},
+  frame hidden,
+  leftrule=3pt,
+  arc=0mm,
+  left=15pt, right=10pt, top=10pt, bottom=10pt,
+  shadow={0mm}{0mm}{0mm}{white}
+}
+
+% ===================== 5. 标题样式系统 =====================
+\usepackage{titlesec}
+\titleformat{\section}
+  {\TitleCJK\sffamily\bfseries\huge\color{BrandColor}}
+  {\makebox[0pt][l]{\hspace{-0.4em}\raisebox{1.5ex}{\color{SectionNum!25}\fontsize{70}{70}\selectfont\thesection}}}
+  {0em}
+  {}
+  [{\vspace{-0.5ex}\color{BrandColor!30}\titlerule[2pt]}]
+\titlespacing*{\section}{0pt}{4.5ex plus 1ex minus .2ex}{2.5ex plus .2ex}
+
+\titleformat{\subsection}
+  {\TitleCJK\sffamily\Large\bfseries\color{DarkText}}
+  {}
+  {0em}
+  {\tikz[baseline=(current bounding box.east),outer sep=0pt]
+    \fill[AccentColor] (0,0) rectangle (0.6em, 1.2em);
+   \hspace{0.6em}\thesubsection\hspace{0.8em}}
+\titleformat{name=\subsection,numberless}
+  {\TitleCJK\sffamily\Large\bfseries\color{DarkText}}
+  {}
+  {0em}
+  {\tikz[baseline=(current bounding box.east),outer sep=0pt]
+    \fill[AccentColor] (0,0) rectangle (0.6em, 1.2em);
+   \hspace{0.6em}}
+\titlespacing*{\subsection}{0pt}{3ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
+\titleformat{\subsubsection}
+  {\TitleCJK\sffamily\large\bfseries\color{BrandColor}}
+  {\thesubsubsection}
+  {1em}
+  {}
+
+% ===================== 6. 目录重构 =====================
+\usepackage{titletoc}
+\renewcommand{\contentsname}{\TitleCJK\bfseries\Huge 目录}
+\titlecontents{section}[2.5em]
+  {\addvspace{12pt}\sffamily\bfseries\large}
+  {\contentslabel[\color{BrandColor}\thecontentslabel]{2.5em}}
+  {}
+  {\hfill\color{BrandColor}\contentspage}
+\titlecontents{subsection}[5.5em]
+  {\addvspace{3pt}\sffamily\small}
+  {\contentslabel[\color{Ink!60}\thecontentslabel]{3.0em}}
+  {}
+  {\titlerule*[0.8pc]{.}\contentspage}
+
+% ===================== 7. 页眉页脚 =====================
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\setlength{\headheight}{24pt}
+\fancyhf{}
+\fancyhead[L]{\sffamily\color{Ink!40}\footnotesize \leftmark}
+\fancyhead[R]{\sffamily\color{Ink!40}\footnotesize \CourseName}
+\fancyfoot[C]{
+  \tikz\node[
+    rectangle,
+    fill=BrandColor,
+    text=white,
+    rounded corners=2pt,
+    inner sep=3pt,
+    minimum width=2em
+  ]{\small\thepage};
+}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% ===================== 8. 链接设置 =====================
+\usepackage{hyperref}
+
+% ===================== 信息宏定义 =====================
+\newcommand{\StudentName}{潘宇轩}
+\newcommand{\StudentID}{2023K8009991004}
+\newcommand{\Department}{人工智能学院}
+\newcommand{\Major}{人工智能}
+\newcommand{\CourseName}{认知神经科学}
+
+\newcommand{\PaperTitle}{语义编码与多模态对齐：实验报告}
+\newcommand{\PaperSubtitle}{基于故事听觉 fMRI 的预训练模型特征比较}
+\newcommand{\PaperTitleEn}{Semantic encoding and multimodal alignment: an experimental report}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=BrandColor,
+  urlcolor=AccentColor,
+  citecolor=BrandColor,
+  pdfborder={0 0 0},
+  pdftitle={\PaperTitle},
+  pdfauthor={\StudentName}
+}
+
+% ===================== 兼容性层 (Shim) =====================
+\newcommand{\frontmatter}{}
+\newcommand{\mainmatter}{}
+\newcommand{\backmatter}{}
+\let\realSection\section
+\let\realSubsection\subsection
+\let\realSubsubsection\subsubsection
+\makeatletter
+\NewDocumentCommand{\chapter}{s o m}{%
+  \IfBooleanTF{#1}{%
+    \IfNoValueTF{#2}{\realSection*{#3}}{\realSection*[#2]{#3}}%
+  }{%
+    \IfNoValueTF{#2}{\realSection{#3}}{\realSection[#2]{#3}}%
+  }%
+}
+\RenewDocumentCommand{\section}{s o m}{%
+  \IfBooleanTF{#1}{%
+    \IfNoValueTF{#2}{\realSubsection*{#3}}{\realSubsection*[#2]{#3}}%
+  }{%
+    \IfNoValueTF{#2}{\realSubsection{#3}}{\realSubsection[#2]{#3}}%
+  }%
+}
+\RenewDocumentCommand{\subsection}{s o m}{%
+  \IfBooleanTF{#1}{%
+    \IfNoValueTF{#2}{\realSubsubsection*{#3}}{\realSubsubsection*[#2]{#3}}%
+  }{%
+    \IfNoValueTF{#2}{\realSubsubsection{#3}}{\realSubsubsection[#2]{#3}}%
+  }%
+}
+\makeatother
+
+% ===================== 全局图片插图命令 =====================
+\newcommand{\InsertFig}[4]{%
+  \begin{figure}[H]
+    \centering
+    \includegraphics[width=#2]{#1}%
+    \caption{#3}%
+    \label{#4}%
+  \end{figure}%
+}
+
+% ===================== 附录：原始文件嵌入 =====================
+\usepackage{fancyvrb}
+
+\begin{document}
+
+% ===================== 封面设计（复用综述风格） =====================
+\begin{titlepage}
+  \thispagestyle{empty}
+  \newgeometry{margin=0cm}
+  \begin{tikzpicture}[remember picture,overlay]
+    \path[shade, top color=BrandColor!88!black, bottom color=BrandColor!8]
+      (current page.north west) rectangle (current page.south east);
+    \foreach \x in {0.08,0.20,...,0.92} {
+      \draw[white, opacity=0.04, line width=0.6pt]
+        ([xshift=\x\paperwidth]current page.north west) -- ([xshift=\x\paperwidth]current page.south west);
+    }
+    \node[
+      anchor=center,
+      yshift=0.02\paperheight,
+      rounded corners=4mm,
+      fill=white,
+      fill opacity=0.86,
+      text opacity=1,
+      draw=white,
+      draw opacity=0.15,
+      line width=0.6pt,
+      inner xsep=18pt,
+      inner ysep=16pt,
+      drop shadow={opacity=0.12, shadow xshift=0mm, shadow yshift=-1mm}
+    ] at (current page.center) {%
+      \begin{minipage}{0.78\paperwidth}
+        \centering
+        \tikz\node[fill=BrandColor!10, text=BrandColor, rounded corners=20pt, inner sep=9pt]
+          {\sffamily\bfseries\large \CourseName};\\[1.0cm]
+
+        {\rmfamily\bfseries\fontsize{33}{44}\selectfont\color{DarkText} \PaperTitle}\\[0.35cm]
+        {\TitleCJK\sffamily\Large\color{DarkText!80} \PaperSubtitle}\\[0.45cm]
+        {\fontspec{TeX Gyre Pagella}\itshape\fontsize{13}{18}\selectfont\color{Ink!65} \PaperTitleEn}\\[0.9cm]
+
+        \tikz\draw[AccentColor, line width=1.4pt] (0,0) -- (4,0);\\[0.9cm]
+
+        \renewcommand{\arraystretch}{1.55}
+        \sffamily\color{DarkText}
+        \begin{tabular}{r@{\hspace{1em}}l}
+          \textbf{\color{BrandColor!80} 报告人} & \large \StudentName \\
+          \textbf{\color{BrandColor!80} 学\quad 号} & \large \StudentID \\
+          \textbf{\color{BrandColor!80} 院\quad 系} & \large \Department \\
+          \textbf{\color{BrandColor!80} 专\quad 业} & \large \Major \\
+          \textbf{\color{BrandColor!80} 日\quad 期} & \large \today \\
+        \end{tabular}
+      \end{minipage}%
+    };
+  \end{tikzpicture}
+\end{titlepage}
+\restoregeometry
+
+% ===================== 摘要页（不使用列表，全文段落） =====================
+\clearpage
+\begin{AbstractBox}
+本实验报告基于当前项目目录中已生成的结果文件撰写，所有数值均来自 \texttt{results/summary.csv}、\texttt{results/roi.csv} 与各模型目录下保存的相关图（\texttt{corr\_layer*.npy} 以及融合的 \texttt{corr\_*.npy}）。研究目标是在故事听觉 fMRI 数据上，对比文本模型、音频模型、多模态模型在不同层与不同时间窗口（TR 窗口）条件下的脑预测性能，并结合 ROI 统计与可视化图像分析区域偏好。实验采用统一的对齐、降维与时延展开流程，并在多被试上进行单次训练/测试划分的岭回归评估，从而得到可复现的全脑相关图。报告呈现两类图像：其一为统计图（模型对比与窗口趋势、ROI Top20），由 \texttt{report/scripts/make\_figures.py} 读取现有结果自动生成；其二为脑图，可视化来自 \texttt{src/run\_plot\_corr\_maps.py} 对保存的 corr map 进行映射绘制。最终结论以当前“已经完成”的实验为依据：音频表征在长窗口下显著优于文本表征；Whisper 的多模态表征与强音频基线接近；文本+音频融合目前仅完成部分组合与窗口，尚未显示超过强音频基线的优势。
+\end{AbstractBox}
+\clearpage
+
+% ===================== 目录页 =====================
+\clearpage
+{
+  \newgeometry{top=3cm, bottom=3cm, left=3cm, right=3cm}
+  \hypersetup{linkcolor=DarkText}
+  \tableofcontents
+  \restoregeometry
+}
+\clearpage
+
+% ===================== 正文（章节拆分在独立文件中） =====================
+\input{report/experiment_chapters/01_background}
+\input{report/experiment_chapters/02_data_alignment}
+\input{report/experiment_chapters/03_models_features}
+\input{report/experiment_chapters/04_encoding_evaluation}
+\input{report/experiment_chapters/05_text_results}
+\input{report/experiment_chapters/06_audio_results}
+\input{report/experiment_chapters/07_multimodal_results}
+\input{report/experiment_chapters/08_fusion_results}
+\input{report/experiment_chapters/09_roi_discussion}
+\input{report/experiment_chapters/10_conclusion}
+
+% ===================== 附录：完整原始数据（不通过脚本生成） =====================
+\appendix
+\chapter{附录：原始结果文件（逐行原样嵌入）}
+为满足“所有已完成实验数据均在报告中可追溯”的要求，本附录直接嵌入关键 CSV 与融合日志的原始内容。此处不对原始文件进行二次处理，也不通过脚本生成表格，确保内容与磁盘一致。
+
+\section{results/summary.csv}
+\VerbatimInput[fontsize=\scriptsize]{results/summary.csv}
+
+\section{results/fusion/gpt2\_\_microsoft\_wavlm-base-plus/log.txt}
+\VerbatimInput[fontsize=\scriptsize]{results/fusion/gpt2__microsoft_wavlm-base-plus/log.txt}
+
+\section{results/fusion/gpt2\_\_facebook\_wav2vec2-base-960h/log.txt}
+\VerbatimInput[fontsize=\scriptsize]{results/fusion/gpt2__facebook_wav2vec2-base-960h/log.txt}
+
+\section{results/roi.csv}
+由于 \texttt{results/roi.csv} 为按 MMP ROI 展开的全量记录，行数较大，直接嵌入会导致 \TeX{} 内存耗尽。本报告已在正文中通过 ROI Top20 图对该文件进行了统计使用；原始文件保持在仓库的 \texttt{results/roi.csv} 路径下，供复核与后续命名映射使用。
+
+\end{document}

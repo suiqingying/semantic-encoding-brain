@@ -1,0 +1,43 @@
+\chapter{编码模型、评价指标与输出结构}
+\subsection{从 TR 特征到 BOLD：线性编码模型的形式化}
+设某一类特征在 TR 级别上形成矩阵 $X\in\mathbb{R}^{T\times D}$，其中 $T$ 为有效 TR 数量、$D$ 为特征维度；对应被试的 fMRI ROI 信号为 $Y\in\mathbb{R}^{T\times V}$，其中 $V=360$ 为 ROI 数量。线性编码模型采用岭回归，对每个 ROI 同时求解权重矩阵 $W\in\mathbb{R}^{D\times V}$：
+\begin{equation}
+\hat{W}=\arg\min_{W}\ \lVert XW-Y\rVert_{2}^{2}+\alpha\lVert W\rVert_{2}^{2}.
+\end{equation}
+这里 $\alpha$ 为 $L_{2}$ 正则强度。岭回归的优势在于当 $D$ 较大且特征存在共线性时，仍能得到数值稳定的解，并在有限样本下缓解过拟合。当前工程中 \texttt{DEFAULT\_ALPHAS} 提供了若干候选正则强度，但由于 \texttt{DEFAULT\_KFOLD=1}，实际训练并未进行 K 折交叉验证选择超参，而是在单次训练/测试划分下使用候选列表中的第一个 $\alpha$。因此，当前结果可被理解为一套“固定正则的线性基线”，其主要价值在于为不同特征与不同层提供统一且可追溯的对比基准。
+
+\subsection{BOLD 延迟建模：PCA 降维与 FIR 延迟展开}
+从预训练模型得到的 TR 特征往往维度较高，直接回归会带来计算成本与病态风险。因此，本项目在回归前对 TR 特征做 PCA 降维，默认保留 250 维（\texttt{DEFAULT\_PCA\_DIM=250}）。随后，为显式建模 BOLD 延迟与时间扩散，本项目采用 FIR（finite impulse response）延迟展开：将每个 TR 的特征与若干个过去 TR 的特征按时间顺序拼接，形成扩展特征矩阵。当前默认设置为窗口长度 4、偏移 1（\texttt{DEFAULT\_FIR\_WINDOW=4}、\texttt{DEFAULT\_FIR\_OFFSET=1}），这意味着在预测某一 TR 的 fMRI 时，模型可以使用从较早 TR 开始、覆盖若干步历史的刺激表示，从而在不引入非线性结构的前提下捕捉响应延迟。
+
+\subsection{数据划分与多被试汇总}
+编码模型以每个被试为单位独立训练与评估：对每个被试的 $(X,Y)$ 在时间轴上做截断以去除边界 TR，然后按时间顺序切分为训练段与测试段（当前实现默认测试比例为 0.2）。在测试段上计算预测信号与真实信号的相关系数，得到长度为 360 的相关向量（corr map）。为得到多被试的总体性能，项目对每个被试的 corr map 求均值作为该被试的总体分数，再对所有被试分数计算均值与标准差并写入 \texttt{log.txt}。因此，报告中“平均值 $\pm$ 标准差”对应的是跨被试的统计，而不是跨折的统计。
+
+\subsection{评价指标与 corr map 的含义}
+评价指标为 Pearson 相关系数。对第 $v$ 个 ROI，设测试段真实信号为 $y_{v}$、预测信号为 $\hat{y}_{v}$，则相关为
+\begin{equation}
+r_{v}=\frac{\sum_{t}(\hat{y}_{v,t}-\overline{\hat{y}_{v}})(y_{v,t}-\overline{y_{v}})}{\sqrt{\sum_{t}(\hat{y}_{v,t}-\overline{\hat{y}_{v}})^{2}}\sqrt{\sum_{t}(y_{v,t}-\overline{y_{v}})^{2}}}.
+\end{equation}
+将所有 ROI 的 $r_{v}$ 组成向量即可得到 corr map。项目保存的 \texttt{corr\_layer*.npy} 即为该向量，长度为 360，前 180 对应左半球 ROI，后 180 对应右半球 ROI。可视化时，\texttt{src/viz.py} 读取 HCP-MMP 的 ROI 标签文件，将 ROI 相关值映射回 fsaverage 表面顶点并绘制，输出以左右半球的外侧与内侧视图组成的四联图，保证角度稳定且信息密集。
+
+\subsection{输出文件结构与可追溯性}
+本项目输出结构以 \texttt{results/} 为根。文本、音频、多模态的线性编码结果分别位于 \texttt{results/text/}、\texttt{results/audio/}、\texttt{results/multimodal/}；每个配置目录包含 \texttt{log.txt} 与若干 \texttt{corr\_layer*.npy}。融合结果位于 \texttt{results/fusion/}，其中每个融合对目录包含融合日志与多个融合 corr map 文件（例如 \texttt{corr\_t9\_a6\_ctx200\_tr1.npy}）。报告中的统计图由 \texttt{report/scripts/make\_figures.py} 从 \texttt{results/summary.csv} 与 \texttt{results/roi.csv} 生成，脑图由 \texttt{src/run\_plot\_corr\_maps.py} 从 corr map 生成并保存到 \texttt{report/figures/brainmaps/}。该设计使得报告中每一张图都能追溯回唯一的源文件路径，便于复核与增量补充实验。
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=1.1cm, font=\small]
+\node[draw, rounded corners, fill=BrandColor!4, inner sep=6pt] (stim) {刺激（文本/音频）};
+\node[draw, rounded corners, fill=BrandColor!4, right=1.6cm of stim, inner sep=6pt] (feat) {预训练模型特征（多层）};
+\node[draw, rounded corners, fill=BrandColor!4, right=1.6cm of feat, inner sep=6pt] (tr) {TR 聚合与对齐};
+\node[draw, rounded corners, fill=BrandColor!4, right=1.6cm of tr, inner sep=6pt] (pca) {PCA(250)};
+\node[draw, rounded corners, fill=BrandColor!4, right=1.6cm of pca, inner sep=6pt] (fir) {FIR(4,1)};
+\node[draw, rounded corners, fill=BrandColor!4, right=1.6cm of fir, inner sep=6pt] (ridge) {岭回归};
+\node[draw, rounded corners, fill=BrandColor!4, right=1.6cm of ridge, inner sep=6pt] (corr) {corr map(360)};
+\draw[->, thick] (stim) -- (feat);
+\draw[->, thick] (feat) -- (tr);
+\draw[->, thick] (tr) -- (pca);
+\draw[->, thick] (pca) -- (fir);
+\draw[->, thick] (fir) -- (ridge);
+\draw[->, thick] (ridge) -- (corr);
+\end{tikzpicture}
+\caption{线性编码建模流水线概览。图中每一步都对应仓库内的具体实现与可追溯的输出文件。}
+\end{figure}

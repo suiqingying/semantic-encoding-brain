@@ -1,0 +1,27 @@
+\chapter{文本+音频融合结果：实现细节、当前覆盖范围与可视化}
+融合实验的输出位于 \texttt{results/fusion/}。与单模态结果使用 \texttt{corr\_layer*.npy} 命名不同，融合结果的文件名包含文本层、音频层、文本上下文窗口与音频 TR 窗口，例如 \texttt{corr\_t9\_a9\_ctx200\_tr1.npy}。融合的核心思想是把文本与音频在 TR 级对齐后进行特征拼接，然后在同一套 PCA+FIR+岭回归框架下评估其对 fMRI 的可预测性。实现上，\texttt{src/run\_multimodal\_fusion.py} 对文本与音频分别做标准化（\texttt{StandardScaler}），将两者在维度上拼接得到融合特征，再在拼接后的空间中执行 PCA（默认 250 维），最后做 FIR 延迟展开并回归到 360 个 ROI。该过程与单模态的区别在于：单模态的 PCA 发生在原始特征空间，而融合的 PCA 发生在拼接后的联合空间，因此其主成分同时受到文本与音频方差结构的影响。
+
+当前仓库中可追溯的融合记录显示，融合并未覆盖所有文本模型、所有音频模型、所有 TR 窗口与所有层的笛卡尔积，而是受到“是否已存在对应的特征文件”的约束。具体而言，\texttt{results/fusion/} 下已存在三个融合对目录（例如 \texttt{gpt2\_\_microsoft\_wavlm-base-plus}），其中每个目录包含 \texttt{log.txt} 与若干融合 corr map。由于音频最强结果集中在 6TR，而融合记录主要出现在更短的 TR 窗口条件下，因此在数值对照时必须避免将“不同窗口条件下的融合结果”与“6TR 条件下的音频最优结果”作强结论比较。本报告在此严格陈述：在当前已生成的融合日志中，最好的条目来自 \texttt{gpt2} 与 \texttt{microsoft/wavlm-base-plus} 的组合，其均值相关约为 0.0302（标准差约 0.0171），对应配置为 \texttt{text\_layer=9}、\texttt{audio\_layer=9}、\texttt{ctx\_words=200}、\texttt{tr\_win=1}。这一水平明显低于音频与多模态在 6TR 条件下取得的 0.08--0.09 量级结果，但该差距是否来自融合机制本身、来自窗口不匹配、或来自组合覆盖不充分，均需要在后续扩展相同窗口条件下的融合实验后才能判断。
+
+为了把融合的空间分布纳入“图文一致”的可追溯链路，图 \ref{fig:fusion_map_best} 展示上述最优融合配置的脑图可视化。该图像的作用是让后续工作可以在相同视角下对比融合、音频与多模态的空间分布差异，并检查融合是否在部分 ROI 上更接近文本或音频的模式。
+
+此外，为了给出融合目录中一个明确可复现的示例，图 \ref{fig:fusion_map_example} 额外展示一个不同层组合（\texttt{t9\_a6\_ctx200\_tr1}）的脑图，便于观察在相同模型对与相同窗口下，仅改变层组合时空间分布可能发生的变化。
+
+\begin{table}[H]
+\centering
+\caption{融合（gpt2 + WavLM，ctx=200，tr=1）在已保存日志中的部分代表性条目。数值直接来自 \texttt{results/fusion/gpt2\_\_microsoft\_wavlm-base-plus/log.txt}。}
+\begin{tabular}{cccc}
+\toprule
+文本层 & 音频层 & 均值相关 & 标准差 \\
+\midrule
+9 & 9 & 0.0302 & 0.0171 \\
+12 & 9 & 0.0301 & 0.0157 \\
+9 & 12 & 0.0292 & 0.0168 \\
+9 & 1 & 0.0283 & 0.0154 \\
+6 & 4 & 0.0274 & 0.0189 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\InsertFig{fusion_gpt2__microsoft_wavlm-base-plus_corr_t9_a9_ctx200_tr1.png}{0.92\linewidth}{最优融合配置：gpt2（layer9）+ WavLM（layer9），ctx=200，tr=1 的相关图可视化（由 src/run\_plot\_corr\_maps.py 从 results/fusion 的 corr\_*.npy 绘制）。}{fig:fusion_map_best}
+\InsertFig{fusion_gpt2__microsoft_wavlm-base-plus_corr_t9_a6_ctx200_tr1.png}{0.92\linewidth}{融合示例：gpt2（layer9）+ WavLM（layer6），ctx=200，tr=1 的相关图可视化（由 src/run\_plot\_corr\_maps.py 从 results/fusion 的 corr\_*.npy 绘制）。}{fig:fusion_map_example}
