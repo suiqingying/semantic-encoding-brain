@@ -1,14 +1,14 @@
 % !TeX program = xelatex
 % !TeX output-file = main.pdf
-\documentclass[UTF8,a4paper,12pt,fontset=none]{ctexart}
+\documentclass[UTF8,a4paper,zihao=-4,fontset=none]{ctexart}
 
 % ===================== 1. 基础页面设置 =====================
 \usepackage[a4paper,
   top=2.8cm, bottom=2.8cm, left=2.4cm, right=2.4cm,
-  headheight=20pt, marginparwidth=2cm
+  headheight=25pt, marginparwidth=2cm
 ]{geometry}
 \usepackage{setspace}
-\setstretch{1.45}
+\setstretch{1.5}
 \usepackage{indentfirst}
 \setlength{\parindent}{2em}
 \usepackage{microtype}
@@ -23,22 +23,13 @@
 
 % ===================== 2. 字体设置 =====================
 \usepackage{fontspec}
-\newcommand{\LatinMainPref}{TeX Gyre Pagella}
-\newcommand{\LatinSansPref}{Noto Sans}
-\newcommand{\LatinMonoPref}{JetBrains Mono}
-\newcommand{\CJKMainPref}{Noto Serif CJK SC}
-\newcommand{\CJKSansPref}{Noto Sans CJK SC}
-\IfFontExistsTF{\LatinMainPref}{\setmainfont{\LatinMainPref}}{\setmainfont{Latin Modern Roman}}
-\IfFontExistsTF{\LatinSansPref}{\setsansfont{\LatinSansPref}}{\setsansfont{Latin Modern Sans}}
-\IfFontExistsTF{\LatinMonoPref}{\setmonofont{\LatinMonoPref}}{\setmonofont{Latin Modern Mono}}
-\IfFontExistsTF{\CJKMainPref}{\setCJKmainfont{\CJKMainPref}}{\setCJKmainfont{FandolSong-Regular}}
-\IfFontExistsTF{\CJKSansPref}{\setCJKsansfont{\CJKSansPref}}{\setCJKsansfont{FandolHei-Regular}}
-\setCJKmonofont{\CJKSansPref}
-\IfFontExistsTF{\CJKSansPref}{
-  \newCJKfontfamily{\TitleCJK}{\CJKSansPref}[FakeBold=2]
-}{
-  \newCJKfontfamily{\TitleCJK}{FandolHei-Regular}[FakeBold=2]
-}
+\setmainfont{Times New Roman}
+\setsansfont{Times New Roman}
+\setmonofont{JetBrains Mono}
+\setCJKmainfont{SimSun}[BoldFont=SimHei]
+\setCJKsansfont{SimSun}[BoldFont=SimHei]
+\setCJKmonofont{SimSun}
+\newCJKfontfamily{\TitleCJK}{SimHei}
 
 % ===================== 3. 高级配色方案 =====================
 \usepackage{xcolor}
@@ -75,7 +66,7 @@
   colback=BrandColor!4,
   colframe=BrandColor,
   coltitle=BrandColor,
-  fonttitle=\TitleCJK\bfseries\large,
+  fonttitle=\TitleCJK\large,
   title={摘\quad 要},
   detach title,
   before upper={\tcbtitle\par\vspace{0.5em}},
@@ -89,7 +80,7 @@
 % ===================== 5. 标题样式系统 =====================
 \usepackage{titlesec}
 \titleformat{\section}
-  {\TitleCJK\sffamily\bfseries\huge\color{BrandColor}}
+  {\TitleCJK\sffamily\huge\color{BrandColor}}
   {\makebox[0pt][l]{\hspace{-0.4em}\raisebox{1.5ex}{\color{SectionNum!25}\fontsize{70}{70}\selectfont\thesection}}}
   {0em}
   {}
@@ -97,14 +88,14 @@
 \titlespacing*{\section}{0pt}{4.5ex plus 1ex minus .2ex}{2.5ex plus .2ex}
 
 \titleformat{\subsection}
-  {\TitleCJK\sffamily\Large\bfseries\color{DarkText}}
+  {\TitleCJK\sffamily\Large\color{DarkText}}
   {}
   {0em}
   {\tikz[baseline=(current bounding box.east),outer sep=0pt]
     \fill[AccentColor] (0,0) rectangle (0.6em, 1.2em);
    \hspace{0.6em}\thesubsection\hspace{0.8em}}
 \titleformat{name=\subsection,numberless}
-  {\TitleCJK\sffamily\Large\bfseries\color{DarkText}}
+  {\TitleCJK\sffamily\Large\color{DarkText}}
   {}
   {0em}
   {\tikz[baseline=(current bounding box.east),outer sep=0pt]
@@ -113,14 +104,14 @@
 \titlespacing*{\subsection}{0pt}{3ex plus 1ex minus .2ex}{1.5ex plus .2ex}
 
 \titleformat{\subsubsection}
-  {\TitleCJK\sffamily\large\bfseries\color{BrandColor}}
+  {\TitleCJK\sffamily\large\color{BrandColor}}
   {\thesubsubsection}
   {1em}
   {}
 
 % ===================== 6. 目录重构 =====================
 \usepackage{titletoc}
-\renewcommand{\contentsname}{\TitleCJK\bfseries\Huge 目录}
+\renewcommand{\contentsname}{\TitleCJK\Huge 目录}
 \titlecontents{section}[2.5em]
   {\addvspace{12pt}\sffamily\bfseries\large}
   {\contentslabel[\color{BrandColor}\thecontentslabel]{2.5em}}
@@ -135,7 +126,7 @@
 % ===================== 7. 页眉页脚 =====================
 \usepackage{fancyhdr}
 \pagestyle{fancy}
-\setlength{\headheight}{24pt}
+\setlength{\headheight}{25pt}
 \fancyhf{}
 \fancyhead[L]{\sffamily\color{Ink!40}\footnotesize \leftmark}
 \fancyhead[R]{\sffamily\color{Ink!40}\footnotesize \CourseName}
