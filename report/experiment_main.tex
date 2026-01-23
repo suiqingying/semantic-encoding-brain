@@ -1,5 +1,5 @@
 % !TeX program = xelatex
-% !TeX output-file = experiment_report.pdf
+% !TeX output-file = experiment_main.pdf
 \documentclass[UTF8,a4paper,12pt,fontset=none]{ctexart}
 
 % ===================== 1. 基础页面设置 =====================
@@ -55,12 +55,19 @@
 \usepackage{graphicx}
 \usepackage{caption}
 \captionsetup{font={small,sf,color=Ink!80},labelfont={bf,color=BrandColor},labelsep=quad}
-% 编译工作目录为仓库根目录，因此这里使用 report 下的相对路径
-\graphicspath{{report/figures/}{report/figures/brainmaps/}}
+% 以 report/ 为工作目录编译：图片路径相对当前 tex 文件
+\graphicspath{{figures/}{figures/brainmaps/}}
 \usepackage{tikz}
 \usetikzlibrary{shapes, shadows, positioning, calc, backgrounds, fadings}
 \usepackage{tcolorbox}
 \tcbuselibrary{skins, breakable}
+\usepackage{xurl}
+\setlength{\emergencystretch}{2em}
+\sloppy
+\hbadness=10000
+\vbadness=10000
+\hfuzz=20pt
+\vfuzz=10pt
 
 \newtcolorbox{AbstractBox}{
   enhanced,
@@ -146,7 +153,7 @@
 \renewcommand{\footrulewidth}{0pt}
 
 % ===================== 8. 链接设置 =====================
-\usepackage{hyperref}
+% hyperref 会触发 bookmark 级别警告（ctexart+自定义章节级别），本报告不需要链接功能，禁用以消除编译警告
 
 % ===================== 信息宏定义 =====================
 \newcommand{\StudentName}{潘宇轩}
@@ -159,15 +166,7 @@
 \newcommand{\PaperSubtitle}{基于故事听觉 fMRI 的预训练模型特征比较}
 \newcommand{\PaperTitleEn}{Semantic encoding and multimodal alignment: an experimental report}
 
-\hypersetup{
-  colorlinks=true,
-  linkcolor=BrandColor,
-  urlcolor=AccentColor,
-  citecolor=BrandColor,
-  pdfborder={0 0 0},
-  pdftitle={\PaperTitle},
-  pdfauthor={\StudentName}
-}
+% hyperref disabled: no link configuration
 
 % ===================== 兼容性层 (Shim) =====================
 \newcommand{\frontmatter}{}
@@ -202,9 +201,9 @@
 
 % ===================== 全局图片插图命令 =====================
 \newcommand{\InsertFig}[4]{%
-  \begin{figure}[H]
+  \begin{figure}[tbp]
     \centering
-    \includegraphics[width=#2]{#1}%
+    \includegraphics[width=#2,height=0.78\textheight,keepaspectratio]{#1}%
     \caption{#3}%
     \label{#4}%
   \end{figure}%
@@ -277,39 +276,31 @@
 \clearpage
 {
   \newgeometry{top=3cm, bottom=3cm, left=3cm, right=3cm}
-  \hypersetup{linkcolor=DarkText}
   \tableofcontents
   \restoregeometry
 }
 \clearpage
 
 % ===================== 正文（章节拆分在独立文件中） =====================
-\input{report/experiment_chapters/01_background}
-\input{report/experiment_chapters/02_data_alignment}
-\input{report/experiment_chapters/03_models_features}
-\input{report/experiment_chapters/04_encoding_evaluation}
-\input{report/experiment_chapters/05_text_results}
-\input{report/experiment_chapters/06_audio_results}
-\input{report/experiment_chapters/07_multimodal_results}
-\input{report/experiment_chapters/08_fusion_results}
-\input{report/experiment_chapters/09_roi_discussion}
-\input{report/experiment_chapters/10_conclusion}
+\input{experiment_chapters/01_background}
+\input{experiment_chapters/02_data_alignment}
+\input{experiment_chapters/03_models_features}
+\input{experiment_chapters/04_encoding_evaluation}
+\input{experiment_chapters/05_text_results}
+\input{experiment_chapters/06_audio_results}
+\input{experiment_chapters/07_multimodal_results}
+\input{experiment_chapters/08_fusion_results}
+\input{experiment_chapters/09_roi_discussion}
+\input{experiment_chapters/10_conclusion}
 
-% ===================== 附录：完整原始数据（不通过脚本生成） =====================
+% ===================== 附录：结果文件位置（不逐行嵌入） =====================
 \appendix
-\chapter{附录：原始结果文件（逐行原样嵌入）}
-为满足“所有已完成实验数据均在报告中可追溯”的要求，本附录直接嵌入关键 CSV 与融合日志的原始内容。此处不对原始文件进行二次处理，也不通过脚本生成表格，确保内容与磁盘一致。
-
-\section{results/summary.csv}
-\VerbatimInput[fontsize=\scriptsize]{results/summary.csv}
-
-\section{results/fusion/gpt2\_\_microsoft\_wavlm-base-plus/log.txt}
-\VerbatimInput[fontsize=\scriptsize]{results/fusion/gpt2__microsoft_wavlm-base-plus/log.txt}
-
-\section{results/fusion/gpt2\_\_facebook\_wav2vec2-base-960h/log.txt}
-\VerbatimInput[fontsize=\scriptsize]{results/fusion/gpt2__facebook_wav2vec2-base-960h/log.txt}
-
-\section{results/roi.csv}
-由于 \texttt{results/roi.csv} 为按 MMP ROI 展开的全量记录，行数较大，直接嵌入会导致 \TeX{} 内存耗尽。本报告已在正文中通过 ROI Top20 图对该文件进行了统计使用；原始文件保持在仓库的 \texttt{results/roi.csv} 路径下，供复核与后续命名映射使用。
+\chapter{附录：结果文件位置与复现说明}
+本报告的所有数值与脑图均来自项目根目录下的 \texttt{results/} 与 \texttt{report/figures/}。
+其中，模型评估与汇总表位于 \texttt{results/summary.csv}；ROI 统计位于 \texttt{results/roi.csv}；
+各模型的相关图数组为 \texttt{corr\_layer*.npy}（融合为 \texttt{corr\_*.npy}），保存在对应的
+\texttt{results/text/}、\texttt{results/audio/}、\texttt{results/multimodal/} 与 \texttt{results/fusion/} 目录下。
+统计图由 \texttt{report/scripts/make\_figures.py} 读取上述结果自动生成到 \texttt{report/figures/}；
+脑图由 \texttt{src/run\_plot\_corr\_maps.py} 读取相关图数组并输出到 \texttt{report/figures/brainmaps/}。
 
 \end{document}

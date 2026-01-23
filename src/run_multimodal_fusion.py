@@ -110,6 +110,18 @@ def main() -> int:
     fmris = load_fmri()
     df = load_align_df()
     n_trs = fmris[75].shape[0]
+
+    total_planned = (
+        len(ctx_list)
+        * len(tr_win_list)
+        * len(text_models)
+        * len(audio_models)
+        * len(text_layers)
+        * len(audio_layers)
+    )
+    existing = list((RESULTS_ROOT / "fusion").rglob("corr_t*_a*_ctx*_tr*.npy"))
+    print(f"[fusion] planned={total_planned} existing={len(existing)}", flush=True)
+
     for ctx_words in ctx_list:
         for tr_win in tr_win_list:
             for text_model in text_models:
@@ -124,6 +136,13 @@ def main() -> int:
 
                             text_file = text_dir / f"text_{safe_name(text_model)}_win{ctx_words}_layer{text_layer}_features.npy"
                             audio_file = audio_dir / f"audio_{safe_name(audio_model)}_win{tr_win}TR_layer{audio_layer}_features.npy"
+
+                            out_dir = RESULTS_ROOT / "fusion" / f"{safe_name(text_model)}__{safe_name(audio_model)}"
+                            layer_tag = f"t{text_layer}_a{audio_layer}_ctx{ctx_words}_tr{tr_win}"
+                            out_corr = out_dir / f"corr_{layer_tag}.npy"
+                            if out_corr.exists():
+                                print(f"[fusion] skip done: {out_corr}", flush=True)
+                                continue
 
                             if not text_file.exists() or not audio_file.exists():
                                 print(f"[fusion] skip missing: {text_file} or {audio_file}", flush=True)
@@ -155,18 +174,16 @@ def main() -> int:
                                 kfold=DEFAULT_KFOLD,
                             )
 
-                            out_dir = RESULTS_ROOT / "fusion" / f"{safe_name(text_model)}__{safe_name(audio_model)}"
                             out_dir.mkdir(parents=True, exist_ok=True)
                             log_path = out_dir / "log.txt"
                             stats = summarize(corr_means)
-                            layer_tag = f"t{text_layer}_a{audio_layer}_ctx{ctx_words}_tr{tr_win}"
                             with log_path.open("a", encoding="utf-8") as f:
                                 f.write(f"text_model={text_model}, audio_model={audio_model}, text_layer={text_layer}, audio_layer={audio_layer}, ctx_words={ctx_words}, tr_win={tr_win}\n")
                                 f.write(f"层标记: {layer_tag}\n")
                                 f.write(f"平均值: {stats.mean:.4f} ± {stats.std:.4f}\n")
                                 f.write(f"范围: [{stats.min:.4f}, {stats.max:.4f}]\n")
                                 f.write(f"中位数: {stats.median:.4f}\n\n")
-                            np.save(out_dir / f"corr_{layer_tag}.npy", corr_map)
+                            np.save(out_corr, corr_map)
                             print(f"[fusion] {combo_tag} done", flush=True)
 
     return 0

@@ -50,10 +50,12 @@ python -m src.run_summary --out results/summary.csv
 
 
 ## 本地作图
-把整个 `results/` 目录拷贝到本地，然后运行：
+把服务器端生成的整个 `results/` 目录拷贝到本地项目根目录下（本地路径同样为 `results/`），然后在项目根目录逐行运行：
 ```bash
-python -m src.run_plot_corr_maps --input-dir results --pattern "corr*.npy" --out-dir results/plots
+python report/scripts/make_figures.py
+python -m src.run_plot_corr_maps
 ```
+输出位于 `report/figures/` 与 `report/figures/brainmaps/`（最终 PDF：`report/experiment_main.pdf`）。
 
 ## 输出位置
 - `results/text/<model>/win200/` 文本模型结果

@@ -24,20 +24,22 @@ r_{v}=\frac{\sum_{t}(\hat{y}_{v,t}-\overline{\hat{y}_{v}})(y_{v,t}-\overline{y_{
 
 \begin{figure}[H]
 \centering
-\begin{tikzpicture}[node distance=1.1cm, font=\small]
+\begin{tikzpicture}[node distance=0.9cm, font=\small, scale=0.95, transform shape]
 \node[draw, rounded corners, fill=BrandColor!4, inner sep=6pt] (stim) {刺激（文本/音频）};
-\node[draw, rounded corners, fill=BrandColor!4, right=1.6cm of stim, inner sep=6pt] (feat) {预训练模型特征（多层）};
-\node[draw, rounded corners, fill=BrandColor!4, right=1.6cm of feat, inner sep=6pt] (tr) {TR 聚合与对齐};
-\node[draw, rounded corners, fill=BrandColor!4, right=1.6cm of tr, inner sep=6pt] (pca) {PCA(250)};
-\node[draw, rounded corners, fill=BrandColor!4, right=1.6cm of pca, inner sep=6pt] (fir) {FIR(4,1)};
-\node[draw, rounded corners, fill=BrandColor!4, right=1.6cm of fir, inner sep=6pt] (ridge) {岭回归};
-\node[draw, rounded corners, fill=BrandColor!4, right=1.6cm of ridge, inner sep=6pt] (corr) {corr map(360)};
+\node[draw, rounded corners, fill=BrandColor!4, right=1.0cm of stim, inner sep=6pt] (feat) {预训练模型特征（多层）};
+\node[draw, rounded corners, fill=BrandColor!4, right=1.0cm of feat, inner sep=6pt] (tr) {TR 聚合与对齐};
+\node[draw, rounded corners, fill=BrandColor!4, right=1.0cm of tr, inner sep=6pt] (pca) {PCA(250)};
+
+\node[draw, rounded corners, fill=BrandColor!4, below=1.0cm of feat, inner sep=6pt] (fir) {FIR(4,1)};
+\node[draw, rounded corners, fill=BrandColor!4, right=1.0cm of fir, inner sep=6pt] (ridge) {岭回归};
+\node[draw, rounded corners, fill=BrandColor!4, right=1.0cm of ridge, inner sep=6pt] (corr) {corr map(360)};
+
 \draw[->, thick] (stim) -- (feat);
 \draw[->, thick] (feat) -- (tr);
 \draw[->, thick] (tr) -- (pca);
-\draw[->, thick] (pca) -- (fir);
+\draw[->, thick] (pca) |- (fir);
 \draw[->, thick] (fir) -- (ridge);
 \draw[->, thick] (ridge) -- (corr);
 \end{tikzpicture}
-\caption{线性编码建模流水线概览。图中每一步都对应仓库内的具体实现与可追溯的输出文件。}
+\caption{线性编码建模流水线概览。为避免版面溢出，示意图采用两行布局，但顺序与实现一致。}
 \end{figure}

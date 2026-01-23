@@ -126,7 +126,6 @@ def make_accuracy_bar(reports_dir: Path, figures_dir: Path) -> None:
 
     figures_dir.mkdir(parents=True, exist_ok=True)
     fig.tight_layout()
-    fig.savefig(figures_dir / "accuracy_bar.pdf", facecolor="white", bbox_inches="tight")
     fig.savefig(figures_dir / "accuracy_bar.png", facecolor="white", bbox_inches="tight")
     plt.close(fig)
 
@@ -134,7 +133,6 @@ def make_accuracy_bar(reports_dir: Path, figures_dir: Path) -> None:
 def _save_fig(fig: plt.Figure, figures_dir: Path, name: str) -> None:
     figures_dir.mkdir(parents=True, exist_ok=True)
     fig.tight_layout()
-    fig.savefig(figures_dir / f"{name}.pdf", facecolor="white", bbox_inches="tight")
     fig.savefig(figures_dir / f"{name}.png", facecolor="white", bbox_inches="tight")
     plt.close(fig)
 
@@ -285,6 +283,157 @@ def make_window_trend(summary_csv: Path, figures_dir: Path) -> None:
         ax.grid(alpha=0.25, linestyle="--")
         ax.legend(frameon=False, ncol=2, fontsize=9)
         _save_fig(fig, figures_dir, out_name)
+
+
+def _read_fusion_records(fusion_root: Path) -> list[dict]:
+    import re
+
+    records: list[dict] = []
+    for log_path in fusion_root.rglob("log.txt"):
+        try:
+            lines = log_path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+
+        meta: dict | None = None
+        tag: str | None = None
+        mean_val: float | None = None
+        std_val: float | None = None
+        median_val: float | None = None
+
+        for line in lines:
+            if line.startswith("text_model="):
+                meta = {"log": log_path.as_posix()}
+                # example:
+                # text_model=gpt2, audio_model=microsoft/wavlm-base-plus, text_layer=9, audio_layer=9, ctx_words=200, tr_win=1
+                parts = [p.strip() for p in line.split(",")]
+                for p in parts:
+                    if "=" not in p:
+                        continue
+                    k, v = p.split("=", 1)
+                    meta[k.strip()] = v.strip()
+                tag = None
+                mean_val = None
+                std_val = None
+                median_val = None
+            elif line.startswith("层标记:"):
+                tag = line.split(":", 1)[1].strip()
+            elif line.startswith("平均值:"):
+                m = re.search(r"平均值: ([0-9.\-]+) ± ([0-9.\-]+)", line)
+                if m:
+                    try:
+                        mean_val = float(m.group(1))
+                        std_val = float(m.group(2))
+                    except ValueError:
+                        mean_val = std_val = None
+            elif line.startswith("中位数:"):
+                m = re.search(r"中位数: ([0-9.\-]+)", line)
+                if m:
+                    try:
+                        median_val = float(m.group(1))
+                    except ValueError:
+                        median_val = None
+
+                if meta and tag and mean_val is not None:
+                    rec = dict(meta)
+                    rec["tag"] = tag
+                    rec["mean"] = mean_val
+                    rec["std"] = std_val
+                    rec["median"] = median_val
+                    # normalize numeric fields
+                    for k in ("text_layer", "audio_layer", "ctx_words", "tr_win"):
+                        if k in rec:
+                            try:
+                                rec[k] = int(float(rec[k]))
+                            except ValueError:
+                                pass
+                    records.append(rec)
+                meta = None
+                tag = None
+                mean_val = None
+                std_val = None
+                median_val = None
+
+    return records
+
+
+def make_fusion_figures(figures_dir: Path) -> None:
+    import pandas as pd
+
+    # figures_dir = <repo>/report/figures
+    fusion_root = figures_dir.parents[1] / "results" / "fusion"
+    if not fusion_root.exists():
+        return
+
+    recs = _read_fusion_records(fusion_root)
+    if not recs:
+        return
+
+    has_cjk = _set_plot_style()
+    df = pd.DataFrame(recs)
+
+    # 1) Top-k fusion configs
+    topk = df.sort_values("mean", ascending=False).head(12).copy()
+    if not topk.empty:
+        labels = [
+            f"{r['text_model']}@{r['text_layer']} + {r['audio_model']}@{r['audio_layer']} (tr{r['tr_win']})"
+            for _, r in topk.iterrows()
+        ]
+        vals = topk["mean"].to_numpy()
+        fig, ax = plt.subplots(figsize=(12.0, 5.0))
+        bars = ax.bar(range(len(labels)), vals, color=NORD["purple"], alpha=0.88, edgecolor=NORD["snow"], linewidth=0.8)
+        ax.set_xticks(range(len(labels)), labels, rotation=30, ha="right")
+        ax.set_ylabel("相关系数" if has_cjk else "Correlation")
+        ax.set_title("融合：Top12 配置（均值相关）" if has_cjk else "Fusion: Top12 configs (mean corr)", fontweight="bold", color=NORD["dark"])
+        ax.grid(axis="y", alpha=0.25, linestyle="--")
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.bar_label(bars, labels=[f"{v:.3f}" for v in vals], padding=3, color=NORD["dark"], fontsize=9)
+        _save_fig(fig, figures_dir, "fusion_best")
+
+    # 2) Best performance by TR window (overall best per tr_win)
+    if "tr_win" in df.columns:
+        by_tr = df.groupby("tr_win")["mean"].max().sort_index()
+        if not by_tr.empty:
+            trs = by_tr.index.to_list()
+            ys = by_tr.to_numpy()
+            fig, ax = plt.subplots(figsize=(8.5, 4.4))
+            ax.plot(trs, ys, marker="o", linewidth=2.2, color=NORD["teal"])
+            ax.set_xlabel("TR window")
+            ax.set_ylabel("相关系数" if has_cjk else "Correlation")
+            ax.set_title("融合：不同 TR 窗口的最优性能" if has_cjk else "Fusion: best performance across TR windows", fontweight="bold", color=NORD["dark"])
+            ax.grid(alpha=0.25, linestyle="--")
+            _save_fig(fig, figures_dir, "fusion_tr_window_trend")
+
+    # 3) Heatmap for the globally best pair (best mean across all records)
+    best_row = df.sort_values("mean", ascending=False).head(1)
+    if not best_row.empty and {"text_model", "audio_model", "tr_win", "ctx_words"}.issubset(df.columns):
+        bm = best_row.iloc[0]["text_model"]
+        am = best_row.iloc[0]["audio_model"]
+        tr = int(best_row.iloc[0]["tr_win"])
+        ctx = int(best_row.iloc[0]["ctx_words"])
+        sub = df[(df["text_model"] == bm) & (df["audio_model"] == am) & (df["tr_win"] == tr) & (df["ctx_words"] == ctx)]
+        if not sub.empty and {"text_layer", "audio_layer"}.issubset(sub.columns):
+            pivot = sub.pivot_table(index="text_layer", columns="audio_layer", values="mean", aggfunc="max")
+            pivot = pivot.sort_index().sort_index(axis=1)
+            mat = pivot.to_numpy()
+            fig, ax = plt.subplots(figsize=(7.6, 5.4))
+            im = ax.imshow(mat, cmap="viridis", aspect="auto")
+            ax.set_xticks(range(pivot.shape[1]), [str(c) for c in pivot.columns])
+            ax.set_yticks(range(pivot.shape[0]), [str(r) for r in pivot.index])
+            ax.set_xlabel("audio_layer")
+            ax.set_ylabel("text_layer")
+            title = f"融合热图：{bm}+{am}（ctx={ctx}, tr={tr}）" if has_cjk else f"Fusion heatmap: {bm}+{am} (ctx={ctx}, tr={tr})"
+            ax.set_title(title, fontweight="bold", color=NORD["dark"])
+            cbar = fig.colorbar(im, ax=ax, shrink=0.85, pad=0.02)
+            cbar.set_label("mean corr")
+            # annotate values (small)
+            for i in range(mat.shape[0]):
+                for j in range(mat.shape[1]):
+                    v = mat[i, j]
+                    if v == v:
+                        ax.text(j, i, f"{v:.2f}", ha="center", va="center", fontsize=8, color="white")
+            _save_fig(fig, figures_dir, "fusion_heatmap_bestpair")
 
 
 def make_sentiment_bar(figures_dir: Path) -> None:
@@ -509,6 +658,7 @@ def main() -> None:
         make_encoding_best_bars(encoding_summary, figures_dir)
         make_roi_top_bars(roi_csv, figures_dir)
         make_window_trend(encoding_summary, figures_dir)
+        make_fusion_figures(figures_dir)
         return
 
     # fallback: original demo figures (kept for compatibility)

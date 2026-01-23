@@ -1,13 +1,12 @@
-\chapter{多模态模型结果：Whisper 与 CLAP 的对比}
-多模态模型部分的结果来自 \texttt{results/summary.csv} 中 \texttt{/multimodal/} 相关条目以及对应目录下的 \texttt{corr\_layer*.npy}。图 \ref{fig:multi_best} 展示了各多模态模型在已完成条件下的最佳层均值相关，图 \ref{fig:multi_tr_trend} 展示了不同 TR 窗口下的最佳层趋势。当前结果中，\texttt{openai/whisper-base} 在 6TR、layer2 达到 0.0889，已经非常接近强音频基线 Wav2Vec2 的 0.0895；\texttt{openai/whisper-small} 在 6TR、layer9 达到 0.0844；\texttt{laion/clap-htsat-unfused} 在 6TR、layer1 达到 0.0788。值得注意的是，Whisper-base 在 1TR、2TR、3TR 条件下也有多层完成记录，其最佳均值分别为 0.0270、0.0408、0.0579，趋势与音频模型一致，说明多模态模型同样高度依赖较长时间窗的聚合。
+\chapter{多模态模型结果：Whisper}
+多模态模型部分的结果来自 \texttt{results/summary.csv} 中 \texttt{/multimodal/} 相关条目以及对应目录下的 \texttt{corr\_layer*.npy}。图 \ref{fig:multi_best} 展示了已完成的多模态模型在最佳层上的全脑均值相关，图 \ref{fig:multi_tr_trend} 展示了不同 TR 窗口下的最佳层趋势。当前结果中，\texttt{openai/whisper-base} 在 6TR、layer2 达到 0.0889，已经非常接近强音频基线 Wav2Vec2 的 0.0895；\texttt{openai/whisper-small} 在 6TR、layer9 达到 0.0844。值得注意的是，Whisper-base 在 1TR、2TR、3TR 条件下也有多层完成记录，其最佳均值分别为 0.0270、0.0408、0.0579，趋势与音频模型一致，说明多模态模型同样高度依赖较长时间窗的聚合。
 
 从“是否优于音频基线”的角度来看，当前已完成的多模态结果并未显著超越音频最优（WavLM 0.0916），但 Whisper-base 已经达到与 Wav2Vec2 接近的水平。由于本报告不引入未完成的显著性检验或噪声天花板估计，因此在解释上保持克制：可以确认多模态模型在当前设置下具有较强的可预测性，但不能仅凭均值相关就断言其“比音频更语义化”或“更接近高阶语言区”，这些需要结合 ROI 命名映射与进一步统计。
 
-与文本与音频章节一致，本章节同样提供“类别脑图对照”与“最优模型脑图”两类图像。图 \ref{fig:multi_montage} 将 Whisper-base、Whisper-small 与 CLAP 在各自最佳配置下的 corr map 并置，以便观察不同多模态家族在空间分布上的共性与差异。图 \ref{fig:multi_whisper_map} 展示 Whisper-base 最优配置（6TR，layer2）的单独脑图，图 \ref{fig:multi_whisper_roi} 展示其 ROI Top20，用于与音频最优模型的 ROI Top20 做直接比较。由于 \texttt{results/roi.csv} 当前只记录 ROI 编号而未提供解剖名称映射，本报告在区域解释上不引入超出文件所能支持的命名推断，而是把重点放在可复现的数值与分布差异描述上。
+与文本与音频章节一致，本章节同样提供“类别脑图对照”与“最优模型脑图”两类图像。图 \ref{fig:multi_montage} 将 Whisper-base 与 Whisper-small 在各自最佳配置下的 corr map 并置，以便观察不同模型在空间分布上的共性与差异。图 \ref{fig:multi_whisper_map} 展示 Whisper-base 最优配置（6TR，layer2）的单独脑图，图 \ref{fig:multi_whisper_roi} 展示其 ROI Top20，用于与音频最优模型的 ROI Top20 做直接比较。由于 \texttt{results/roi.csv} 当前只记录 ROI 编号而未提供解剖名称映射，本报告在区域解释上不引入超出文件所能支持的命名推断，而是把重点放在可复现的数值与分布差异描述上。
 
 \InsertFig{multimodal_best.png}{0.86\linewidth}{多模态模型最佳层的全脑均值相关系数（由 report/scripts/make\_figures.py 从 results/summary.csv 生成）。}{fig:multi_best}
 \InsertFig{multimodal_tr_window_trend.png}{0.92\linewidth}{多模态模型在不同 TR 窗口下的最佳层性能趋势（由 report/scripts/make\_figures.py 从 results/summary.csv 聚合生成）。}{fig:multi_tr_trend}
-\InsertFig{multimodal_class_montage.png}{0.96\linewidth}{多模态模型类别脑图对照：Whisper-base（6TR，layer2）、Whisper-small（6TR，layer9）、CLAP（6TR，layer1）（由 src/run\_plot\_corr\_maps.py 绘制并组合）。}{fig:multi_montage}
+\InsertFig{multimodal_class_montage.png}{0.96\linewidth}{多模态模型类别脑图对照：Whisper-base（6TR，layer2）与 Whisper-small（6TR，layer9）（由 src/run\_plot\_corr\_maps.py 绘制并组合）。}{fig:multi_montage}
 \InsertFig{multimodal_openai_whisper-base_6TR_corr_layer2.png}{0.92\linewidth}{Whisper-base（6TR，layer2）相关图可视化（由 src/run\_plot\_corr\_maps.py 从 corr\_layer2.npy 绘制）。}{fig:multi_whisper_map}
 \InsertFig{roi_whisper6tr_l2.png}{0.86\linewidth}{Whisper-base（6TR，layer2）对应 corr map 的 ROI Top20（由 report/scripts/make\_figures.py 从 results/roi.csv 生成）。}{fig:multi_whisper_roi}
-\InsertFig{multimodal_laion_clap-htsat-unfused_6TR_corr_layer1.png}{0.92\linewidth}{CLAP-HTSAT-unfused（6TR，layer1）相关图可视化（由 src/run\_plot\_corr\_maps.py 从 corr\_layer1.npy 绘制）。}{fig:multi_clap_map}
