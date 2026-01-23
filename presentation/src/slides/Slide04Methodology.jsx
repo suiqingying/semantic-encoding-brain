@@ -120,11 +120,12 @@ function Arrow() {
 }
 
 export default function Slide01Methodology() {
+  const ASSET = `${import.meta.env.BASE_URL}assets/`
   const steps = [
-    { title: '自然语言刺激', sub: '(Stimulus)', desc: '播放故事音频并提供同步文本。', icon: '/assets/stimulus-icon.png' },
-    { title: '特征提取', sub: '(Feature Extraction)', desc: '预训练模型将刺激转化为高维向量。', icon: '/assets/feature-extraction-icon.png' },
-    { title: '模型拟合', sub: '(Model Fitting)', desc: '为每位受试者训练岭回归模型。', icon: '/assets/model-fitting-icon.png' },
-    { title: '性能评估', sub: '(Evaluation)', desc: '以 Pearson 相关系数衡量预测准确率。', icon: '/assets/evaluation-icon.png' },
+    { title: '自然语言刺激', sub: '(Stimulus)', desc: '播放故事音频并提供同步文本。', icon: `${ASSET}stimulus-icon.png` },
+    { title: '特征提取', sub: '(Feature Extraction)', desc: '预训练模型将刺激转化为高维向量。', icon: `${ASSET}feature-extraction-icon.png` },
+    { title: '模型拟合', sub: '(Model Fitting)', desc: '为每位受试者训练岭回归模型。', icon: `${ASSET}model-fitting-icon.png` },
+    { title: '性能评估', sub: '(Evaluation)', desc: '以 Pearson 相关系数衡量预测准确率。', icon: `${ASSET}evaluation-icon.png` },
   ]
 
   return (

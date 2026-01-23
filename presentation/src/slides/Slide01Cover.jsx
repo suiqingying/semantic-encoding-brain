@@ -44,7 +44,7 @@ function ParticleBrainCanvas() {
 
   useEffect(() => {
     const img = new Image()
-    img.src = '/assets/brain-outline.png'
+    img.src = `${import.meta.env.BASE_URL}assets/brain-outline.png`
     img.onload = () => {
       const maxDim = 320
       const scale = Math.min(1, maxDim / Math.max(img.width, img.height))
