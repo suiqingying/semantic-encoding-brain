@@ -1,5 +1,5 @@
 % !TeX program = xelatex
-% !TeX output-file = report.pdf
+% !TeX output-file = main.pdf
 \documentclass[UTF8,a4paper,12pt,fontset=none]{ctexart}
 
 % ===================== 1. 基础页面设置 =====================
@@ -8,7 +8,7 @@
   headheight=20pt, marginparwidth=2cm
 ]{geometry}
 \usepackage{setspace}
-\setstretch{1.45} % 稍微增加行间距，提升正文呼吸感
+\setstretch{1.45}
 \usepackage{indentfirst}
 \setlength{\parindent}{2em}
 \usepackage{microtype}
@@ -17,32 +17,23 @@
 \usepackage{tabularx}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{float}
 
 % ===================== 2. 字体设置 =====================
 \usepackage{fontspec}
-
-% 预设字体名（可修改）——优先现代、清晰、层次分明的一套
-% 统一采用跨平台可用的自由字体，避免因缺字导致的警告
-\newcommand{\LatinMainPref}{TeX Gyre Pagella} % Palatino 风格
-\newcommand{\LatinSansPref}{Noto Sans}        % 类 Segoe UI 的几何无衬线
+\newcommand{\LatinMainPref}{TeX Gyre Pagella}
+\newcommand{\LatinSansPref}{Noto Sans}
 \newcommand{\LatinMonoPref}{JetBrains Mono}
-\newcommand{\CJKMainPref}{Noto Serif CJK SC} % 宋体/衬线风格
-\newcommand{\CJKSansPref}{Noto Sans CJK SC}  % 标题与小节用无衬线
-
-% 英文字体加载
+\newcommand{\CJKMainPref}{Noto Serif CJK SC}
+\newcommand{\CJKSansPref}{Noto Sans CJK SC}
 \IfFontExistsTF{\LatinMainPref}{\setmainfont{\LatinMainPref}}{\setmainfont{Latin Modern Roman}}
 \IfFontExistsTF{\LatinSansPref}{\setsansfont{\LatinSansPref}}{\setsansfont{Latin Modern Sans}}
 \IfFontExistsTF{\LatinMonoPref}{\setmonofont{\LatinMonoPref}}{\setmonofont{Latin Modern Mono}}
-
-% 中文字体加载（正文宋体，标题黑体系），兼容无对应字体时的开源回退
 \IfFontExistsTF{\CJKMainPref}{\setCJKmainfont{\CJKMainPref}}{\setCJKmainfont{FandolSong-Regular}}
 \IfFontExistsTF{\CJKSansPref}{\setCJKsansfont{\CJKSansPref}}{\setCJKsansfont{FandolHei-Regular}}
-
-% 修复字体设置，覆盖默认字体
-
 \setCJKmonofont{\CJKSansPref}
-
-% 标题专用字体：使用中文无衬线（如微软雅黑），形成与正文的层次对比
 \IfFontExistsTF{\CJKSansPref}{
   \newCJKfontfamily{\TitleCJK}{\CJKSansPref}[FakeBold=2]
 }{
@@ -51,64 +42,60 @@
 
 % ===================== 3. 高级配色方案 =====================
 \usepackage{xcolor}
-
-% 核心色板：深青 + 陶土 + 炭黑
-\definecolor{BrandColor}{HTML}{005F6B}      % 更深邃的青色，适合学术
-\definecolor{AccentColor}{HTML}{D97757}     % 陶土色，用于点缀
-\definecolor{DarkText}{HTML}{1A1C20}        % 接近纯黑的深灰，阅读不累眼
-\definecolor{LightGrayBG}{HTML}{F4F6F7}     % 极淡的冷灰背景
-\definecolor{SectionNum}{HTML}{8BA6AC}      % 章节数字的低调色
-
-% 语义化别名
+\definecolor{BrandColor}{HTML}{005F6B}
+\definecolor{AccentColor}{HTML}{D97757}
+\definecolor{DarkText}{HTML}{1A1C20}
+\definecolor{LightGrayBG}{HTML}{F4F6F7}
+\definecolor{SectionNum}{HTML}{8BA6AC}
 \colorlet{Primary}{BrandColor}
 \colorlet{Secondary}{BrandColor!85!black}
 \colorlet{Ink}{DarkText}
 
 % ===================== 4. 图形与视觉组件 =====================
 \usepackage{graphicx}
-\usepackage{float}
 \usepackage{caption}
 \captionsetup{font={small,sf,color=Ink!80},labelfont={bf,color=BrandColor},labelsep=quad}
-\graphicspath{{figures/}{figures/original/}{figures/ai/}}
-
+% 以 report/ 为工作目录编译：图片路径相对当前 tex 文件
+\graphicspath{{figures/}{figures/brainmaps/}}
 \usepackage{tikz}
 \usetikzlibrary{shapes, shadows, positioning, calc, backgrounds, fadings}
-
 \usepackage{tcolorbox}
 \tcbuselibrary{skins, breakable}
+\usepackage{xurl}
+\setlength{\emergencystretch}{2em}
+\sloppy
+\hbadness=10000
+\vbadness=10000
+\hfuzz=20pt
+\vfuzz=10pt
 
-% 摘要盒子设计：更现代的悬浮卡片风格
 \newtcolorbox{AbstractBox}{
   enhanced,
   breakable,
-  colback=BrandColor!4,       % 极淡背景
-  colframe=BrandColor,        % 边框颜色
-  coltitle=BrandColor,        % 标题文字颜色（反转风格）
+  colback=BrandColor!4,
+  colframe=BrandColor,
+  coltitle=BrandColor,
   fonttitle=\TitleCJK\bfseries\large,
   title={摘\quad 要},
-  detach title,               % 分离标题，自定义布局
-  before upper={\tcbtitle\par\vspace{0.5em}}, % 标题放在内容上方
-  frame hidden,               % 隐藏默认边框
-  leftrule=3pt,               % 只保留左侧装饰线
+  detach title,
+  before upper={\tcbtitle\par\vspace{0.5em}},
+  frame hidden,
+  leftrule=3pt,
   arc=0mm,
   left=15pt, right=10pt, top=10pt, bottom=10pt,
-  shadow={0mm}{0mm}{0mm}{white} % 无阴影，更扁平洁净
+  shadow={0mm}{0mm}{0mm}{white}
 }
 
 % ===================== 5. 标题样式系统 =====================
 \usepackage{titlesec}
-
-% Section: 现代杂志风格
 \titleformat{\section}
   {\TitleCJK\sffamily\bfseries\huge\color{BrandColor}}
-  {\makebox[0pt][l]{\hspace{-0.4em}\raisebox{1.5ex}{\color{SectionNum!25}\fontsize{70}{70}\selectfont\thesection}}} % 巨大的背景数字
+  {\makebox[0pt][l]{\hspace{-0.4em}\raisebox{1.5ex}{\color{SectionNum!25}\fontsize{70}{70}\selectfont\thesection}}}
   {0em}
   {}
-  [{\vspace{-0.5ex}\color{BrandColor!30}\titlerule[2pt]}] 
-
+  [{\vspace{-0.5ex}\color{BrandColor!30}\titlerule[2pt]}]
 \titlespacing*{\section}{0pt}{4.5ex plus 1ex minus .2ex}{2.5ex plus .2ex}
 
-% Subsection: 几何方块引导
 \titleformat{\subsection}
   {\TitleCJK\sffamily\Large\bfseries\color{DarkText}}
   {}
@@ -116,8 +103,6 @@
   {\tikz[baseline=(current bounding box.east),outer sep=0pt]
     \fill[AccentColor] (0,0) rectangle (0.6em, 1.2em);
    \hspace{0.6em}\thesubsection\hspace{0.8em}}
-
-% Subsection (numberless): 不显示编号（用于目录/参考文献等 \section* 映射后的标题）
 \titleformat{name=\subsection,numberless}
   {\TitleCJK\sffamily\Large\bfseries\color{DarkText}}
   {}
@@ -125,10 +110,8 @@
   {\tikz[baseline=(current bounding box.east),outer sep=0pt]
     \fill[AccentColor] (0,0) rectangle (0.6em, 1.2em);
    \hspace{0.6em}}
-
 \titlespacing*{\subsection}{0pt}{3ex plus 1ex minus .2ex}{1.5ex plus .2ex}
 
-% Subsubsection: 极简加粗
 \titleformat{\subsubsection}
   {\TitleCJK\sffamily\large\bfseries\color{BrandColor}}
   {\thesubsubsection}
@@ -137,17 +120,12 @@
 
 % ===================== 6. 目录重构 =====================
 \usepackage{titletoc}
-
 \renewcommand{\contentsname}{\TitleCJK\bfseries\Huge 目录}
-
-% Section 目录条目
 \titlecontents{section}[2.5em]
   {\addvspace{12pt}\sffamily\bfseries\large}
   {\contentslabel[\color{BrandColor}\thecontentslabel]{2.5em}}
   {}
   {\hfill\color{BrandColor}\contentspage}
-
-% Subsection 目录条目
 \titlecontents{subsection}[5.5em]
   {\addvspace{3pt}\sffamily\small}
   {\contentslabel[\color{Ink!60}\thecontentslabel]{3.0em}}
@@ -175,7 +153,7 @@
 \renewcommand{\footrulewidth}{0pt}
 
 % ===================== 8. 链接设置 =====================
-\usepackage{hyperref}
+% hyperref 会触发 bookmark 级别警告（ctexart+自定义章节级别），本报告不需要链接功能，禁用以消除编译警告
 
 % ===================== 信息宏定义 =====================
 \newcommand{\StudentName}{潘宇轩}
@@ -184,35 +162,19 @@
 \newcommand{\Major}{人工智能}
 \newcommand{\CourseName}{认知神经科学}
 
-\newcommand{\PaperTitle}{神经语言模型与大脑语义表征的综合文献综述}
-\newcommand{\PaperSubtitle}{融合计算模型与语言神经科学的关键议题}
-\newcommand{\PaperTitleEn}{Neural language models and brain semantic representations: an integrative review}
-\newcommand{\PaperReference}{Huth (2016), Schrimpf (2021), Kumar (2024), Millet (2023), Toneva (2022), Tang (2023) 等}
+\newcommand{\PaperTitle}{语义编码与多模态对齐：综述与实验报告}
+\newcommand{\PaperSubtitle}{基于故事听觉 fMRI 的预训练模型特征比较与相关工作整合}
+\newcommand{\PaperTitleEn}{Semantic encoding and multimodal alignment: a review and experimental report}
 
-% hyperref 需要在相关宏定义之后设置，确保 \PaperTitle、\StudentName 已定义
-\hypersetup{
-  colorlinks=true,
-  linkcolor=BrandColor,
-  urlcolor=AccentColor,
-  citecolor=BrandColor,
-  pdfborder={0 0 0},
-  pdftitle={\PaperTitle},
-  pdfauthor={\StudentName}
-}
+% hyperref disabled: no link configuration
 
 % ===================== 兼容性层 (Shim) =====================
-% 将 Kumar2024 的 ctexbook 结构映射到 ctexart 模板
 \newcommand{\frontmatter}{}
 \newcommand{\mainmatter}{}
 \newcommand{\backmatter}{}
-
-% 保存原始的 section 命令
 \let\realSection\section
 \let\realSubsection\subsection
 \let\realSubsubsection\subsubsection
-
-% 重定义层级：Chapter -> Section, Section -> Subsection
-% 不强制分页，保证章节衔接紧密
 \makeatletter
 \NewDocumentCommand{\chapter}{s o m}{%
   \IfBooleanTF{#1}{%
@@ -237,38 +199,32 @@
 }
 \makeatother
 
-
-% ===================== 文档开始 =====================
-\begin{document}
-
 % ===================== 全局图片插图命令 =====================
-% \InsertFig{文件名(不含路径)}{宽度}{标题}{标签}
 \newcommand{\InsertFig}[4]{%
-  \begin{figure}[htbp]
+  \begin{figure}[tbp]
     \centering
-    \includegraphics[width=#2]{#1}%
+    \includegraphics[width=#2,height=0.78\textheight,keepaspectratio]{#1}%
     \caption{#3}%
     \label{#4}%
   \end{figure}%
 }
 
-% ===================== 旗舰级封面设计（不引用图片） =====================
+% ===================== 附录：原始文件嵌入 =====================
+\usepackage{fancyvrb}
+
+\begin{document}
+
+% ===================== 封面设计（复用综述风格） =====================
 \begin{titlepage}
   \thispagestyle{empty}
   \newgeometry{margin=0cm}
-
   \begin{tikzpicture}[remember picture,overlay]
-    % 全页背景：柔和渐变（避免上下分割）
     \path[shade, top color=BrandColor!88!black, bottom color=BrandColor!8]
       (current page.north west) rectangle (current page.south east);
-
-    % 轻微网格装饰（全页）
     \foreach \x in {0.08,0.20,...,0.92} {
       \draw[white, opacity=0.04, line width=0.6pt]
         ([xshift=\x\paperwidth]current page.north west) -- ([xshift=\x\paperwidth]current page.south west);
     }
-
-    % 一体化信息层：与背景融合的半透明层（避免“白块覆盖”）
     \node[
       anchor=center,
       yshift=0.02\paperheight,
@@ -293,7 +249,6 @@
         {\fontspec{TeX Gyre Pagella}\itshape\fontsize{13}{18}\selectfont\color{Ink!65} \PaperTitleEn}\\[0.9cm]
 
         \tikz\draw[AccentColor, line width=1.4pt] (0,0) -- (4,0);\\[0.9cm]
-        {\sffamily\bfseries\color{SectionNum} \PaperReference}\\[1.1cm]
 
         \renewcommand{\arraystretch}{1.55}
         \sffamily\color{DarkText}
@@ -310,22 +265,26 @@
 \end{titlepage}
 \restoregeometry
 
-% ===================== 摘要页 =====================
+% ===================== 摘要页（不使用列表，全文段落） =====================
 \clearpage
-\input{chapters/00_abstract}
+\begin{AbstractBox}
+本报告将“相关工作综述”与“当前项目实验结果”合并呈现。综述部分围绕自然语言刺激下的语义脑图绘制 \cite{Huth2016,Zhang2020}、预测编码与集成建模框架 \cite{Schrimpf2021,Antonello2023,Kumar2024}、自监督语音表征与大脑对齐 \cite{Baevski2020,Millet2023}、组合语义与上下文表征 \cite{Peters2018,Devlin2019,Radford2019,Toneva2022} 以及连续语义重构的解码方向 \cite{Tang2023}，建立本实验的理论与方法背景。实验部分基于当前项目目录中已生成的结果文件撰写，所有数值均来自 \texttt{results/summary.csv}、\texttt{results/roi.csv} 与各模型目录下保存的相关图（\texttt{corr\_layer*.npy} 以及融合的 \texttt{corr\_*.npy}）。研究目标是在故事听觉 fMRI 数据上，对比文本模型、音频模型、多模态模型在不同层与不同时间窗口（TR 窗口）条件下的脑预测性能，并结合 ROI 统计与可视化图像分析区域偏好。实验采用统一的对齐、降维与时延展开流程，并在多被试上进行单次训练/测试划分的岭回归评估，从而得到可复现的全脑相关图。报告呈现两类图像：其一为统计图（模型对比与窗口趋势、ROI Top20），由 \texttt{report/scripts/make\_figures.py} 读取现有结果自动生成；其二为脑图，可视化来自 \texttt{src/run\_plot\_corr\_maps.py} 对保存的 corr map 进行映射绘制。
+\end{AbstractBox}
 \clearpage
 
 % ===================== 目录页 =====================
 \clearpage
 {
   \newgeometry{top=3cm, bottom=3cm, left=3cm, right=3cm}
-  \hypersetup{linkcolor=DarkText}
   \tableofcontents
   \restoregeometry
 }
 \clearpage
 
-% ===================== 正文 =====================
+% ===================== 正文（章节拆分在独立文件中） =====================
+\chapter{第一部分：相关工作综述与研究动机}
+本部分用于建立实验的研究语境与方法参照。自然叙事刺激下的语义地图研究表明，语义信息在皮层上呈现分布式组织，并跨越传统语言区与默认模式网络等大尺度系统 \cite{Huth2016,Zhang2020}。在模型侧，集成对齐研究将不同语言模型与脑数据进行系统比较，指出架构、训练目标与层级表示共同影响对齐程度 \cite{Schrimpf2021,Antonello2023,Kumar2024}。在语音与多模态方向，自监督语音表征能够在较少标注下形成与人类加工相近的表征梯度 \cite{Baevski2020,Millet2023}。在语义组成与上下文依赖方面，ELMo、BERT、GPT-2 等模型提供了不同的上下文表示机制，为探查“组合意义”在脑中的可测表现提供了可操作的特征空间 \cite{Peters2018,Devlin2019,Radford2019,Toneva2022}。与此同时，连续语义重构工作展示了以语义而非字面文本为目标的解码可能性，为“编码模型”与“解码模型”的统一评估提供了参考 \cite{Tang2023}。
+
 \input{chapters/01_introduction}
 \input{chapters/02_predictive_coding}
 \input{chapters/03_semantic_mapping}
@@ -335,9 +294,29 @@
 \input{chapters/07_methodology}
 \input{chapters/08_crosslingual_multimodal}
 \input{chapters/09_discussion}
-\input{chapters/10_conclusion}
 
-% ===================== 参考文献 =====================
+\chapter{第二部分：实验设计、方法与结果}
+\input{experiment_chapters/01_background}
+\input{experiment_chapters/02_data_alignment}
+\input{experiment_chapters/03_models_features}
+\input{experiment_chapters/04_encoding_evaluation}
+\input{experiment_chapters/05_text_results}
+\input{experiment_chapters/06_audio_results}
+\input{experiment_chapters/07_multimodal_results}
+\input{experiment_chapters/08_fusion_results}
+\input{experiment_chapters/09_roi_discussion}
+\input{experiment_chapters/10_conclusion}
+
+% ===================== 附录：结果文件位置（不逐行嵌入） =====================
+\appendix
+\chapter{附录：结果文件位置与复现说明}
+本报告的所有数值与脑图均来自项目根目录下的 \texttt{results/} 与 \texttt{report/figures/}。
+其中，模型评估与汇总表位于 \texttt{results/summary.csv}；ROI 统计位于 \texttt{results/roi.csv}；
+各模型的相关图数组为 \texttt{corr\_layer*.npy}（融合为 \texttt{corr\_*.npy}），保存在对应的
+\texttt{results/text/}、\texttt{results/audio/}、\texttt{results/multimodal/} 与 \texttt{results/fusion/} 目录下。
+统计图由 \texttt{report/scripts/make\_figures.py} 读取上述结果自动生成到 \texttt{report/figures/}；
+脑图由 \texttt{src/run\_plot\_corr\_maps.py} 读取相关图数组并输出到 \texttt{report/figures/brainmaps/}。
+
 \clearpage
 \bibliographystyle{plain}
 \bibliography{refs}

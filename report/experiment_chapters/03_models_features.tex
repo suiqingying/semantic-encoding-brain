@@ -2,6 +2,8 @@
 \subsection{模型集合与本次报告覆盖范围}
 本项目将刺激表示划分为三类：文本模型表示、音频模型表示与多模态模型表示。文本模型部分在当前结果中覆盖 \texttt{gpt2}、\texttt{bert-base-uncased} 与 \texttt{roberta-base}；音频模型部分覆盖 \texttt{facebook/wav2vec2-base-960h}、\texttt{microsoft/wavlm-base-plus} 与 \texttt{facebook/hubert-base-ls960}；多模态模型部分覆盖 Whisper（\texttt{openai/whisper-small}、\texttt{openai/whisper-base}）与 CLAP（\texttt{laion/clap-htsat-unfused}）。以上模型的可比较结果体现在 \texttt{results/summary.csv} 中，并且每一条统计记录都可以追溯到对应的 \texttt{results/.../log.txt} 与 \texttt{corr\_layer*.npy} 文件。
 
+在方法论上，本项目遵循“以预训练模型的多层隐藏状态作为可解释特征空间”的通行做法。语言模型方面，ELMo 的深层上下文表示 \cite{Peters2018}、BERT 的双向 Transformer 表示 \cite{Devlin2019} 与 GPT-2 的自回归表示 \cite{Radford2019} 构成了常用对照组，用以区分不同训练目标与不同上下文利用方式对脑预测性能的影响。语音模型方面，自监督框架 wav2vec 2.0 \cite{Baevski2020} 提供了从原始波形到高层语音表征的分层表示，并被用于检验模型对齐是否更接近真实语音加工通路 \cite{Millet2023}。在更宏观的模型比较工作中，大规模集成建模强调“层选择”对脑拟合度的关键作用 \cite{Schrimpf2021,Kumar2024}，同时也提醒我们，模型对齐的来源可能既包含预测目标，也包含更一般的特征发现与迁移能力 \cite{Antonello2023}。
+
 \subsection{层选择：按相对深度等比例取样}
 不同预训练模型的层数并不相同，例如多数 base 级 Transformer 编码器为 12 层，而 Whisper-base 的编码器层数更少。如果直接固定使用某些绝对层号（例如一律抽取第 12 层），会导致在浅层模型中越界，或在深层模型中取样过稀，从而让“层对齐差异”混入“层号不匹配”带来的偏差。本项目的层选择采用等比例的相对策略：对每个模型先从配置中读取总层数 $L$，再用等间距取样从 1 到 $L$ 选取若干层，并四舍五入去重得到最终层集合。这一策略的直接结果是：对于 12 层模型，典型层集合为 $\{1,4,6,9,12\}$；对于 6 层模型，则可能得到 $\{1,2,4,5,6\}$。因此，本报告中“layer=k”的含义始终是“该模型结构中的第 $k$ 层”，而不是跨模型共享的绝对语义层级；跨模型比较时，我们把其理解为“从浅到深的相对位置”，并结合每个模型的层数解释其表现。
 

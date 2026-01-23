@@ -59,7 +59,7 @@ python -m src.run_summary --out results/summary.csv
 python report/scripts/make_figures.py
 python -m src.run_plot_corr_maps
 ```
-输出位于 `report/figures/` 与 `report/figures/brainmaps/`（最终 PDF：`report/experiment_main.pdf`）。
+输出位于 `report/figures/` 与 `report/figures/brainmaps/`（最终 PDF：`report/main.pdf`）。
 
 ## 输出位置
 - `results/text/<model>/win200/` 文本模型结果
