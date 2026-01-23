@@ -2,6 +2,10 @@
 
 用于认知神经科学课程的编码模型实验（文本/音频/多模态特征 + 岭回归），包含数据、脚本与工具代码。默认在服务器计算结果，本地再作图。
 
+## Presentation (Slides)
+- 在线演示（GitHub Pages）：`https://suiqingying.github.io/semantic-encoding-brain/`
+- 本地启动：`cd presentation && npm install && npm run dev`
+
 ## 目录结构
 - `data/raw/` 原始数据（不入库，需自行准备）
 - `data/atlas/` 皮层分区/标签文件（GIFTI）

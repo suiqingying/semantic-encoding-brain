@@ -4,6 +4,9 @@
 
 本项目摒弃了传统的静态 PPT 模式，采用代码生成的动态可视化组件，提供沉浸式的演示体验。
 
+## 在线演示 (GitHub Pages)
+主页地址：`https://suiqingying.github.io/semantic-encoding-brain/`
+
 ## 核心特性 (已完成页面)
 
 ### Slide 01: 沉浸式封面
