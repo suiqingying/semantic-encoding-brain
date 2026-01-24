@@ -285,6 +285,101 @@ def make_window_trend(summary_csv: Path, figures_dir: Path) -> None:
         _save_fig(fig, figures_dir, out_name)
 
 
+def make_layer_trend(summary_csv: Path, figures_dir: Path) -> None:
+    rows = _read_encoding_summary(summary_csv)
+    has_cjk = _set_plot_style()
+    plt.rcParams.update({"font.size": 11, "axes.titlesize": 12, "axes.labelsize": 11, "figure.dpi": 200})
+
+    def _iter_rows(group: str, setting_filter: str) -> tuple[str, int, float, float | None]:
+        for row in rows:
+            log = row.get("log", "")
+            if f"/{group}/" not in log:
+                continue
+            tail = log.split(f"/{group}/", 1)[1]
+            parts = tail.split("/")
+            if len(parts) < 2:
+                continue
+            model = parts[0]
+            setting = parts[1]
+            if setting != setting_filter:
+                continue
+            try:
+                layer = int(float(row.get("layer", "nan")))
+                mean_val = float(row.get("mean", "nan"))
+            except ValueError:
+                continue
+            if mean_val != mean_val:
+                continue
+            std_val: float | None
+            try:
+                std_raw = row.get("std", "")
+                std_val = float(std_raw) if std_raw not in ("", None) else None
+            except ValueError:
+                std_val = None
+            yield model, layer, mean_val, std_val
+
+    def _plot(group: str, setting: str, out_name: str, title_cn: str, title_en: str) -> None:
+        by_model: dict[str, dict[int, tuple[float, float | None]]] = {}
+        for model, layer, mean_val, std_val in _iter_rows(group, setting):
+            prev = by_model.setdefault(model, {}).get(layer)
+            if prev is None or mean_val > prev[0]:
+                by_model[model][layer] = (mean_val, std_val)
+
+        if not by_model:
+            return
+
+        layers = sorted({l for m in by_model.values() for l in m.keys()})
+        fig, ax = plt.subplots(figsize=(9.2, 4.8))
+        colors = [NORD["blue"], NORD["teal"], NORD["orange"], NORD["purple"], NORD["green"]]
+
+        for i, (model, series) in enumerate(sorted(by_model.items())):
+            ys = [series.get(l, (np.nan, None))[0] for l in layers]
+            yerr = [series.get(l, (np.nan, None))[1] for l in layers]
+            if any(v is not None for v in yerr):
+                errs = [v if v is not None else 0.0 for v in yerr]
+                ax.errorbar(
+                    layers,
+                    ys,
+                    yerr=errs,
+                    marker="o",
+                    linewidth=2.0,
+                    capsize=2.5,
+                    color=colors[i % len(colors)],
+                    label=model,
+                )
+            else:
+                ax.plot(
+                    layers,
+                    ys,
+                    marker="o",
+                    linewidth=2.0,
+                    color=colors[i % len(colors)],
+                    label=model,
+                )
+
+        ax.set_xlabel("layer")
+        ax.set_ylabel("相关系数" if has_cjk else "Correlation")
+        ax.set_title(title_cn if has_cjk else title_en, fontweight="bold", color=NORD["dark"])
+        ax.grid(alpha=0.25, linestyle="--")
+        ax.legend(frameon=False, ncol=2, fontsize=9)
+        _save_fig(fig, figures_dir, out_name)
+
+    _plot(
+        group="text",
+        setting="win200",
+        out_name="text_layer_trend_win200",
+        title_cn="文本模型：不同层的对齐性能（win200）",
+        title_en="Text: layer-wise performance (win200)",
+    )
+    _plot(
+        group="audio",
+        setting="6TR",
+        out_name="audio_layer_trend_6tr",
+        title_cn="音频模型：不同层的对齐性能（6TR）",
+        title_en="Audio: layer-wise performance (6TR)",
+    )
+
+
 def _read_fusion_records(fusion_root: Path) -> list[dict]:
     import re
 
@@ -658,6 +753,7 @@ def main() -> None:
         make_encoding_best_bars(encoding_summary, figures_dir)
         make_roi_top_bars(roi_csv, figures_dir)
         make_window_trend(encoding_summary, figures_dir)
+        make_layer_trend(encoding_summary, figures_dir)
         make_fusion_figures(figures_dir)
         return
 

@@ -7,6 +7,9 @@
 
 空间分布方面，图 \ref{fig:text_montage} 将三种文本模型的最佳层相关图并置，便于观察在同一绘图视角与同一色标下的差异。为避免把跨模型差异误读为绘图设置差异，本图的每一张脑图都来自相同的 corr map 到皮层表面映射流程。进一步地，图 \ref{fig:text_roberta_map}、图 \ref{fig:text_gpt2_map} 与图 \ref{fig:text_bert_map} 分别展示三种模型在其最佳层的单独脑图，从而便于在后续讨论 ROI 偏好与空间模式时引用。尽管文本模型整体相关较低，图 \ref{fig:text_roberta_roi} 的 ROI Top20 仍能为“哪些区域在当前框架下更容易被文本语义预测”提供定量入口，并可与音频/多模态的 ROI 分布形成对照。
 
+\subsection{非线性补充：Kernel Ridge on aligned features}
+除线性岭回归外，我们在文本对齐特征上补充评估了核岭回归（Kernel Ridge, RBF 核）。该非线性基线直接读取 \texttt{results/text/*/win200/aligned\_layer*.npy} 作为输入，在相同的 FIR 时延展开与 80\%/20\% 时间顺序划分下训练与评估，并把多被试统计写入 \texttt{results/nonlinear/log.txt}。在当前已生成的结果中，RoBERTa-base 的 aligned\_layer1 取得最高均值相关 $0.0141 \pm 0.0186$，GPT-2 的 aligned\_layer6 为 $0.0115 \pm 0.0154$，BERT-base-uncased 的结果整体更低且存在接近零或负值的配置（例如 aligned\_layer1 为 $-0.0007 \pm 0.0181$）。就最优均值而言，该非线性基线并未超过线性文本基线的最佳结果（RoBERTa-base layer4 的 $0.0153 \pm 0.0160$），提示在当前文本特征与样本规模下，简单非线性并不必然带来稳定增益；同时，由于该实现仅输出平均相关统计而不保存 corr map，本文不对其空间分布进行进一步比较。这其实也说明了，模型更加复杂并不一定带来更好的结果，特征本身的质量和适配性可能才是决定模型表现的关键因素。
+
 \InsertFig{text_best.png}{0.86\linewidth}{文本模型最佳层的全脑均值相关系数（从 \texttt{results/summary.csv} 聚合）。}{fig:text_best}
 \InsertFig{text_class_montage.png}{0.96\linewidth}{文本模型最佳层脑图对照：RoBERTa（win200，layer4）、GPT-2（win200，layer12）、BERT（win200，layer6）。}{fig:text_montage}
 \InsertFig{text_roberta-base_win200_corr_layer4.png}{0.92\linewidth}{RoBERTa-base（win200，layer4）相关图可视化。}{fig:text_roberta_map}
