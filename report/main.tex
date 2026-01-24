@@ -107,6 +107,16 @@
   shadow={1mm}{-1mm}{0mm}{Nord4!50}
 }
 
+% 成员信息块（用于“成员与分工”表格的左侧信息列）
+\newcommand{\MemberInfo}[3]{%
+  \parbox[t]{\linewidth}{%
+    \vspace{0pt}% 强制与右栏顶部对齐
+    {\TitleCJK\bfseries\color{Nord10}#1}\par
+    {\sffamily\small\color{Nord3}学号：#2}\par
+    {\sffamily\small\color{Nord3}邮箱：\urlstyle{same}\nolinkurl{#3}}%
+  }%
+}
+
 % ===================== 5. 标题样式系统 =====================
 \usepackage{titlesec}
 
@@ -241,9 +251,9 @@
 \newcommand{\Major}{人工智能}
 \newcommand{\CourseName}{认知神经科学}
 
-\newcommand{\PaperTitle}{语义编码与多模态对齐：综述与实验报告}
-\newcommand{\PaperSubtitle}{基于故事听觉 fMRI 的预训练模型特征比较与相关工作整合}
-\newcommand{\PaperTitleEn}{Semantic encoding and multimodal alignment: a review and experimental report}
+\newcommand{\PaperTitle}{自然故事听觉范式下的语义编码}
+\newcommand{\PaperSubtitle}{预训练文本、语音与多模态表征的比较与融合（基于 The 21st Year fMRI 数据）}
+\newcommand{\PaperTitleEn}{Semantic encoding in natural story listening: comparing and fusing pretrained text, speech, and multimodal representations}
 
 % hyperref 需要在相关宏定义之后设置，确保 \PaperTitle、\StudentName 已定义
 \hypersetup{

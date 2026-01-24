@@ -4,22 +4,20 @@
   breakable,
   colback=Nord6,
   colframe=Nord8,
-  coltitle=Nord10,
-  fonttitle=\TitleCJK\bfseries,
-  title={小组成员与分工},
   frame hidden,
   leftrule=4pt,
   arc=2mm,
   left=12pt,right=10pt,top=10pt,bottom=10pt
 ]
-本项目为小组协作完成，报告中列出每位成员的基本信息与主要分工如下。
-\par\medskip
+{\TitleCJK\bfseries\Large\color{Nord10}小组成员与分工}\par
+\vspace{0.6em}
 {\renewcommand{\arraystretch}{1.25}%
-\begin{tabularx}{\textwidth}{@{}>{\TitleCJK\bfseries\color{Nord10}}l@{\hspace{1.0em}}X@{}}
-姓名 & \StudentName \\
-学号 & \StudentID \\
-邮箱 & \nolinkurl{panyuxuan231@mails.ucas.ac.cn} \\
-分工 & 负责整体方案设计与实现；完成文本/音频/多模态与融合特征提取、线性编码模型与评估、ROI 分析与可视化；整理结果并撰写报告。\\
+\begin{tabularx}{\linewidth}{@{}p{0.34\linewidth}X@{}}
+\MemberInfo{\StudentName}{\StudentID}{panyuxuan231@mails.ucas.ac.cn} & \vspace{0pt}负责整体方案设计与实现；完成文本/音频/多模态与融合特征提取、线性编码模型与评估、ROI 分析与可视化；整理结果并撰写报告。\\[0.6em]
+\MemberInfo{林俊杰}{N/A}{N/A} & \vspace{0pt}未参与本次实验执行与代码实现。\\[0.6em]
+\MemberInfo{王煜}{N/A}{N/A} & \vspace{0pt}未参与本次实验执行与代码实现。\\[0.6em]
+\MemberInfo{李向阳}{N/A}{N/A} & \vspace{0pt}未参与本次实验执行与代码实现。\\[0.6em]
+\MemberInfo{朱奕}{N/A}{N/A} & \vspace{0pt}未参与本次实验执行与代码实现。\\[0.6em]
 \end{tabularx}}
 \end{tcolorbox}
 
