@@ -1,4 +1,4 @@
-\chapter{ROI 分析与综合讨论}
+\section{ROI 分析与综合讨论}
 ROI 分析的目标是回答“不同特征在皮层不同脑区的预测性能是否存在系统差异”。在当前工程实现中，fMRI 已经以 HCP-MMP 360 ROI 的粒度保存并用于回归，因此 ROI 分析不是从顶点或体素再聚合到 ROI 的二次统计，而是对已保存的 ROI 相关向量进行整理与排序。具体流程为：\texttt{src/run\_roi\_analysis.py} 扫描 \texttt{results/} 下所有 \texttt{corr\_layer*.npy} 文件，将每个 corr map 的 360 个相关值与其源路径一起写入 \texttt{results/roi.csv}；随后 \texttt{report/scripts/make\_figures.py} 读取 \texttt{results/roi.csv} 与 \texttt{results/summary.csv}，为若干代表性配置绘制 ROI Top20 条形图。由于 \texttt{results/roi.csv} 明确记录了每个 ROI 值对应的源文件路径，因此任何一张 ROI Top20 图都可以追溯回唯一的 corr map 文件，实现与统计图、脑图一致的可复核链路。
 
 从当前三张 ROI Top20 图的对照可以得到两个在数值层面稳健的观察。第一，当模型整体性能较强（例如音频最优 WavLM 6TR layer9、以及多模态最优 Whisper-base 6TR layer2）时，Top20 ROI 的相关值分布整体上移；当模型整体性能较弱（例如文本 RoBERTa win200 layer4）时，Top20 ROI 的相关也明显较低。该现象与全脑均值趋势一致，提示性能差异并非由单一 ROI 的极端值主导，而更像是多个 ROI 上相关的整体抬升。第二，尽管强模型的 Top20 值整体更高，不同模型的 Top20 ROI 编号与排序并不完全一致，这意味着模型表征的优势可能集中在不同的 ROI 子集上。该差异为“模态偏好与语义偏好”的进一步分析提供了入口，但要把 ROI 编号解释为具体解剖区域或功能系统，需要额外的 ROI 命名映射文件与统计检验（例如多重比较控制）。这些内容在当前结果目录中尚未形成可追溯的输出，因此本报告在此不做超出文件所支持范围的机制性断言。

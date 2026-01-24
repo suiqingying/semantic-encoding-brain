@@ -1,4 +1,4 @@
-\chapter{编码模型、评价指标与输出结构}
+\section{编码模型、评价指标与输出结构}
 \subsection{从 TR 特征到 BOLD：线性编码模型的形式化}
 设某一类特征在 TR 级别上形成矩阵 $X\in\mathbb{R}^{T\times D}$，其中 $T$ 为有效 TR 数量、$D$ 为特征维度；对应被试的 fMRI ROI 信号为 $Y\in\mathbb{R}^{T\times V}$，其中 $V=360$ 为 ROI 数量。线性编码模型采用岭回归，对每个 ROI 同时求解权重矩阵 $W\in\mathbb{R}^{D\times V}$：
 \begin{equation}

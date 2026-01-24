@@ -1,6 +1,7 @@
 % !TeX program = xelatex
 % !TeX output-file = main.pdf
-\documentclass[UTF8,a4paper,zihao=-4,fontset=none]{ctexart}
+% 使用 ctexrep 获取原生 chapter 层级
+\documentclass[UTF8,a4paper,zihao=-4,fontset=none]{ctexrep}
 
 % ===================== 1. 基础页面设置 =====================
 \usepackage[a4paper,
@@ -26,20 +27,48 @@
 \setmainfont{Times New Roman}
 \setsansfont{Times New Roman}
 \setmonofont{JetBrains Mono}
-\setCJKmainfont{SimSun}[BoldFont=SimHei]
-\setCJKsansfont{SimSun}[BoldFont=SimHei]
-\setCJKmonofont{SimSun}
-\newCJKfontfamily{\TitleCJK}{SimHei}
+% 使用宋体并启用假粗体以消除缺失粗体警告
+\setCJKmainfont{SimSun}[BoldFont=SimSun,AutoFakeBold=2]
+\setCJKsansfont{SimSun}[BoldFont=SimSun,AutoFakeBold=2]
+\setCJKmonofont{SimSun}[AutoFakeBold=2]
+\newCJKfontfamily{\TitleCJK}{SimSun}[BoldFont=SimSun,AutoFakeBold=2]
 
-% ===================== 3. 高级配色方案 =====================
+% ===================== 3. Nord极光配色方案 =====================
 \usepackage{xcolor}
-\definecolor{BrandColor}{HTML}{005F6B}
-\definecolor{AccentColor}{HTML}{D97757}
-\definecolor{DarkText}{HTML}{1A1C20}
-\definecolor{LightGrayBG}{HTML}{F4F6F7}
-\definecolor{SectionNum}{HTML}{8BA6AC}
+
+% Nord Polar Night (深色背景系)
+\definecolor{Nord0}{HTML}{2E3440}   % 最深，用于强调文字
+\definecolor{Nord1}{HTML}{3B4252}   % 深灰
+\definecolor{Nord2}{HTML}{434C5E}   % 中灰
+\definecolor{Nord3}{HTML}{4C566A}   % 浅灰
+
+% Nord Snow Storm (浅色背景系)
+\definecolor{Nord4}{HTML}{D8DEE9}   % 浅灰背景
+\definecolor{Nord5}{HTML}{E5E9F0}   % 更浅
+\definecolor{Nord6}{HTML}{ECEFF4}   % 最浅，接近白色
+
+% Nord Frost (冰蓝色系 - 主色调)
+\definecolor{Nord7}{HTML}{8FBCBB}   % 青绿色
+\definecolor{Nord8}{HTML}{88C0D0}   % 冰蓝色 - 主色
+\definecolor{Nord9}{HTML}{81A1C1}   % 蓝灰色
+\definecolor{Nord10}{HTML}{5E81AC}  % 深蓝色
+
+% Nord Aurora (极光色系 - 强调色)
+\definecolor{Nord11}{HTML}{BF616A}  % 红色
+\definecolor{Nord12}{HTML}{D08770}  % 橙色
+\definecolor{Nord13}{HTML}{EBCB8B}  % 黄色
+\definecolor{Nord14}{HTML}{A3BE8C}  % 绿色
+\definecolor{Nord15}{HTML}{B48EAD}  % 紫色
+
+% 语义化别名
+\definecolor{BrandColor}{HTML}{5E81AC}      % Nord10 深蓝 - 主品牌色
+\definecolor{AccentColor}{HTML}{88C0D0}     % Nord8 冰蓝 - 强调色
+\definecolor{DarkText}{HTML}{2E3440}        % Nord0 深色文字
+\definecolor{LightGrayBG}{HTML}{ECEFF4}     % Nord6 浅色背景
+\definecolor{SectionNum}{HTML}{81A1C1}      % Nord9 章节数字
+
 \colorlet{Primary}{BrandColor}
-\colorlet{Secondary}{BrandColor!85!black}
+\colorlet{Secondary}{Nord9}
 \colorlet{Ink}{DarkText}
 
 % ===================== 4. 图形与视觉组件 =====================
@@ -60,91 +89,100 @@
 \hfuzz=20pt
 \vfuzz=10pt
 
+% 摘要盒子设计：Nord极光风格
 \newtcolorbox{AbstractBox}{
   enhanced,
   breakable,
-  colback=BrandColor!4,
-  colframe=BrandColor,
-  coltitle=BrandColor,
-  fonttitle=\TitleCJK\large,
+  colback=Nord6,              % Nord浅色背景
+  colframe=Nord8,             % 冰蓝边框
+  coltitle=Nord10,            % 深蓝标题
+  fonttitle=\TitleCJK\bfseries\large,
   title={摘\quad 要},
   detach title,
   before upper={\tcbtitle\par\vspace{0.5em}},
   frame hidden,
-  leftrule=3pt,
-  arc=0mm,
-  left=15pt, right=10pt, top=10pt, bottom=10pt,
-  shadow={0mm}{0mm}{0mm}{white}
+  leftrule=4pt,               % 左侧极光装饰线
+  arc=2mm,
+  left=15pt, right=10pt, top=12pt, bottom=12pt,
+  shadow={1mm}{-1mm}{0mm}{Nord4!50}
 }
 
 % ===================== 5. 标题样式系统 =====================
 \usepackage{titlesec}
+
+% Chapter 样式
+\titleformat{\chapter}
+  {\TitleCJK\sffamily\bfseries\huge\color{Nord10}}
+  {\makebox[0pt][l]{\hspace{-0.4em}\raisebox{1.5ex}{\color{Nord8!30}\fontsize{70}{70}\selectfont\thechapter}}}
+  {0em}
+  {}
+  [{\vspace{-0.5ex}\color{Nord8!50}\titlerule[2pt]}]
+\titlespacing*{\chapter}{0pt}{4.5ex plus 1ex minus .2ex}{2.5ex plus .2ex}
+
+% Section 样式
 \titleformat{\section}
-  {\TitleCJK\sffamily\huge\color{BrandColor}}
-  {\makebox[0pt][l]{\hspace{-0.4em}\raisebox{1.5ex}{\color{SectionNum!25}\fontsize{70}{70}\selectfont\thesection}}}
-  {0em}
+  {\TitleCJK\sffamily\bfseries\Large\color{Nord0}}
   {}
-  [{\vspace{-0.5ex}\color{BrandColor!30}\titlerule[2pt]}]
-\titlespacing*{\section}{0pt}{4.5ex plus 1ex minus .2ex}{2.5ex plus .2ex}
+  {0em}
+  {\tikz[baseline=(current bounding box.east),outer sep=0pt]
+    \fill[Nord8] (0,0) rectangle (0.6em, 1.2em);
+   \hspace{0.6em}\thesection\hspace{0.8em}}
+\titlespacing*{\section}{0pt}{3ex plus 1ex minus .2ex}{1.5ex plus .2ex}
 
+% Subsection 样式
 \titleformat{\subsection}
-  {\TitleCJK\sffamily\Large\color{DarkText}}
-  {}
-  {0em}
-  {\tikz[baseline=(current bounding box.east),outer sep=0pt]
-    \fill[AccentColor] (0,0) rectangle (0.6em, 1.2em);
-   \hspace{0.6em}\thesubsection\hspace{0.8em}}
-\titleformat{name=\subsection,numberless}
-  {\TitleCJK\sffamily\Large\color{DarkText}}
-  {}
-  {0em}
-  {\tikz[baseline=(current bounding box.east),outer sep=0pt]
-    \fill[AccentColor] (0,0) rectangle (0.6em, 1.2em);
-   \hspace{0.6em}}
-\titlespacing*{\subsection}{0pt}{3ex plus 1ex minus .2ex}{1.5ex plus .2ex}
-
-\titleformat{\subsubsection}
-  {\TitleCJK\sffamily\large\color{BrandColor}}
-  {\thesubsubsection}
+  {\TitleCJK\sffamily\large\bfseries\color{Nord9}}
+  {\thesubsection}
   {1em}
   {}
 
 % ===================== 6. 目录重构 =====================
 \usepackage{titletoc}
-\renewcommand{\contentsname}{\TitleCJK\Huge 目录}
-\titlecontents{section}[2.5em]
+
+\renewcommand{\contentsname}{\TitleCJK\bfseries\Huge 目录}
+
+% Chapter 目录条目（只显示标题，不显示编号）
+\titlecontents{chapter}[0em]
   {\addvspace{12pt}\sffamily\bfseries\large}
-  {\contentslabel[\color{BrandColor}\thecontentslabel]{2.5em}}
   {}
-  {\hfill\color{BrandColor}\contentspage}
-\titlecontents{subsection}[5.5em]
-  {\addvspace{3pt}\sffamily\small}
-  {\contentslabel[\color{Ink!60}\thecontentslabel]{3.0em}}
+  {}
+  {\hfill\color{Nord10}\contentspage}
+
+% Section 目录条目
+\titlecontents{section}[3.5em]
+  {\addvspace{6pt}\sffamily\small}
+  {\contentslabel[\color{Nord3}\thecontentslabel]{2.8em}}
   {}
   {\titlerule*[0.8pc]{.}\contentspage}
+
+% Subsection 目录条目
+\titlecontents{subsection}[6.0em]
+  {\addvspace{2pt}\sffamily\footnotesize}
+  {\contentslabel[\color{Nord3!80}\thecontentslabel]{3.0em}}
+  {}
+  {\titlerule*[0.6pc]{.}\contentspage}
 
 % ===================== 7. 页眉页脚 =====================
 \usepackage{fancyhdr}
 \pagestyle{fancy}
-\setlength{\headheight}{25pt}
 \fancyhf{}
-\fancyhead[L]{\sffamily\color{Ink!40}\footnotesize \leftmark}
-\fancyhead[R]{\sffamily\color{Ink!40}\footnotesize \CourseName}
+\fancyhead[L]{\sffamily\color{Nord3}\footnotesize \leftmark}
+\fancyhead[R]{\sffamily\color{Nord3}\footnotesize \CourseName}
 \fancyfoot[C]{
   \tikz\node[
     rectangle,
-    fill=BrandColor,
+    fill=Nord10,
     text=white,
-    rounded corners=2pt,
-    inner sep=3pt,
-    minimum width=2em
+    rounded corners=3pt,
+    inner sep=4pt,
+    minimum width=2.2em
   ]{\small\thepage};
 }
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0pt}
 
 % ===================== 8. 链接设置 =====================
-% hyperref 会触发 bookmark 级别警告（ctexart+自定义章节级别），本报告不需要链接功能，禁用以消除编译警告
+\usepackage{hyperref}
 
 % ===================== 信息宏定义 =====================
 \newcommand{\StudentName}{潘宇轩}
@@ -157,38 +195,16 @@
 \newcommand{\PaperSubtitle}{基于故事听觉 fMRI 的预训练模型特征比较与相关工作整合}
 \newcommand{\PaperTitleEn}{Semantic encoding and multimodal alignment: a review and experimental report}
 
-% hyperref disabled: no link configuration
-
-% ===================== 兼容性层 (Shim) =====================
-\newcommand{\frontmatter}{}
-\newcommand{\mainmatter}{}
-\newcommand{\backmatter}{}
-\let\realSection\section
-\let\realSubsection\subsection
-\let\realSubsubsection\subsubsection
-\makeatletter
-\NewDocumentCommand{\chapter}{s o m}{%
-  \IfBooleanTF{#1}{%
-    \IfNoValueTF{#2}{\realSection*{#3}}{\realSection*[#2]{#3}}%
-  }{%
-    \IfNoValueTF{#2}{\realSection{#3}}{\realSection[#2]{#3}}%
-  }%
+% hyperref 需要在相关宏定义之后设置，确保 \PaperTitle、\StudentName 已定义
+\hypersetup{
+  colorlinks=true,
+  linkcolor=BrandColor,
+  urlcolor=AccentColor,
+  citecolor=BrandColor,
+  pdfborder={0 0 0},
+  pdftitle={\PaperTitle},
+  pdfauthor={\StudentName}
 }
-\RenewDocumentCommand{\section}{s o m}{%
-  \IfBooleanTF{#1}{%
-    \IfNoValueTF{#2}{\realSubsection*{#3}}{\realSubsection*[#2]{#3}}%
-  }{%
-    \IfNoValueTF{#2}{\realSubsection{#3}}{\realSubsection[#2]{#3}}%
-  }%
-}
-\RenewDocumentCommand{\subsection}{s o m}{%
-  \IfBooleanTF{#1}{%
-    \IfNoValueTF{#2}{\realSubsubsection*{#3}}{\realSubsubsection*[#2]{#3}}%
-  }{%
-    \IfNoValueTF{#2}{\realSubsubsection{#3}}{\realSubsubsection[#2]{#3}}%
-  }%
-}
-\makeatother
 
 % ===================== 全局图片插图命令 =====================
 \newcommand{\InsertFig}[4]{%
@@ -210,45 +226,53 @@
   \thispagestyle{empty}
   \newgeometry{margin=0cm}
   \begin{tikzpicture}[remember picture,overlay]
-    \path[shade, top color=BrandColor!88!black, bottom color=BrandColor!8]
+    % Nord 渐变背景与细网格
+    \path[shade, left color=Nord10!90, right color=Nord7!85]
       (current page.north west) rectangle (current page.south east);
-    \foreach \x in {0.08,0.20,...,0.92} {
-      \draw[white, opacity=0.04, line width=0.6pt]
-        ([xshift=\x\paperwidth]current page.north west) -- ([xshift=\x\paperwidth]current page.south west);
+    \foreach \y in {0.05,0.15,...,0.95} {
+      \draw[white, opacity=0.05, line width=0.5pt]
+        ([yshift=\y\paperheight]current page.west) -- ([yshift=\y\paperheight]current page.east);
     }
+    \foreach \x in {0.1,0.25,...,0.9} {
+      \draw[white, opacity=0.06, line width=0.5pt]
+        ([xshift=\x\paperwidth]current page.south) -- ([xshift=\x\paperwidth]current page.north);
+    }
+    % 角落极光圆斑
+    \fill[Nord8!28, opacity=0.65] ([xshift=-2cm,yshift=1cm]current page.north east) circle (3.5cm);
+    \fill[Nord12!24, opacity=0.55] ([xshift=2cm,yshift=-1cm]current page.south west) circle (4cm);
     \node[
       anchor=center,
       yshift=0.02\paperheight,
       rounded corners=4mm,
-      fill=white,
-      fill opacity=0.86,
+      fill=Nord6,
+      fill opacity=0.90,
       text opacity=1,
-      draw=white,
-      draw opacity=0.15,
-      line width=0.6pt,
+      draw=Nord8!40,
+      draw opacity=1,
+      line width=0.8pt,
       inner xsep=18pt,
       inner ysep=16pt,
-      drop shadow={opacity=0.12, shadow xshift=0mm, shadow yshift=-1mm}
+      drop shadow={opacity=0.18, shadow xshift=0mm, shadow yshift=-1.2mm}
     ] at (current page.center) {%
       \begin{minipage}{0.78\paperwidth}
         \centering
-        \tikz\node[fill=BrandColor!10, text=BrandColor, rounded corners=20pt, inner sep=9pt]
-          {\sffamily\bfseries\large \CourseName};\\[1.0cm]
+        \tikz\node[fill=Nord8!20, text=Nord10, rounded corners=18pt, inner sep=9pt]
+          {\sffamily\bfseries\large \CourseName};\\[1.1cm]
 
-        {\rmfamily\bfseries\fontsize{33}{44}\selectfont\color{DarkText} \PaperTitle}\\[0.35cm]
-        {\TitleCJK\sffamily\Large\color{DarkText!80} \PaperSubtitle}\\[0.45cm]
-        {\fontspec{TeX Gyre Pagella}\itshape\fontsize{13}{18}\selectfont\color{Ink!65} \PaperTitleEn}\\[0.9cm]
+        {\rmfamily\bfseries\fontsize{34}{46}\selectfont\color{Nord0} \PaperTitle}\\[0.35cm]
+        {\TitleCJK\sffamily\Large\color{Nord0!80} \PaperSubtitle}\\[0.45cm]
+        {\fontspec{TeX Gyre Pagella}\itshape\fontsize{13}{18}\selectfont\color{Nord3} \PaperTitleEn}\\[1.0cm]
 
-        \tikz\draw[AccentColor, line width=1.4pt] (0,0) -- (4,0);\\[0.9cm]
+        \tikz\draw[Nord13, line width=1.6pt] (0,0) -- (4.8,0);\\[1.0cm]
 
         \renewcommand{\arraystretch}{1.55}
-        \sffamily\color{DarkText}
+        \sffamily\color{Nord0}
         \begin{tabular}{r@{\hspace{1em}}l}
-          \textbf{\color{BrandColor!80} 报告人} & \large \StudentName \\
-          \textbf{\color{BrandColor!80} 学\quad 号} & \large \StudentID \\
-          \textbf{\color{BrandColor!80} 院\quad 系} & \large \Department \\
-          \textbf{\color{BrandColor!80} 专\quad 业} & \large \Major \\
-          \textbf{\color{BrandColor!80} 日\quad 期} & \large \today \\
+          \textbf{\color{Nord9} 报告人} & \large \StudentName \\
+          \textbf{\color{Nord9} 学\quad 号} & \large \StudentID \\
+          \textbf{\color{Nord9} 院\quad 系} & \large \Department \\
+          \textbf{\color{Nord9} 专\quad 业} & \large \Major \\
+          \textbf{\color{Nord9} 日\quad 期} & \large \today \\
         \end{tabular}
       \end{minipage}%
     };
@@ -263,14 +287,25 @@
 \end{AbstractBox}
 \clearpage
 
-% ===================== 目录页 =====================
-\clearpage
+% ===================== 目录页（带装饰，无多余空白页） =====================
 {
   \newgeometry{top=3cm, bottom=3cm, left=3cm, right=3cm}
-  \tableofcontents
+  % 目录页背景装饰
+  \begin{tikzpicture}[remember picture, overlay]
+     \node[anchor=north east, text=Nord5, font=\bfseries\fontsize{120}{120}\selectfont, rotate=-90] 
+       at ([xshift=-1cm, yshift=-3cm]current page.north east) {CONTENT};
+     \draw[line width=2pt, Nord8!30] ([xshift=-2.5cm]current page.north east) -- ([xshift=-2.5cm]current page.south east);
+  \end{tikzpicture}
+
+  \hypersetup{linkcolor=Nord0} 
+  % 避免 \tableofcontents 内部的清页指令让目录另起一整页
+  \begingroup
+    \let\clearpage\relax
+    \let\cleardoublepage\relax
+    \tableofcontents
+  \endgroup
   \restoregeometry
 }
-\clearpage
 
 % ===================== 正文（章节拆分在独立文件中） =====================
 \chapter{第一部分：相关工作综述与研究动机}

@@ -1,4 +1,4 @@
-\chapter{预训练模型、层选择策略与特征提取实现}
+\section{预训练模型、层选择策略与特征提取实现}
 \subsection{模型集合与本次报告覆盖范围}
 本项目将刺激表示划分为三类：文本模型表示、音频模型表示与多模态模型表示。文本模型部分在当前结果中覆盖 \texttt{gpt2}、\texttt{bert-base-uncased} 与 \texttt{roberta-base}；音频模型部分覆盖 \texttt{facebook/wav2vec2-base-960h}、\texttt{microsoft/wavlm-base-plus} 与 \texttt{facebook/hubert-base-ls960}；多模态模型部分覆盖 Whisper（\texttt{openai/whisper-small}、\texttt{openai/whisper-base}）与 CLAP（\texttt{laion/clap-htsat-unfused}）。以上模型的可比较结果体现在 \texttt{results/summary.csv} 中，并且每一条统计记录都可以追溯到对应的 \texttt{results/.../log.txt} 与 \texttt{corr\_layer*.npy} 文件。
 
