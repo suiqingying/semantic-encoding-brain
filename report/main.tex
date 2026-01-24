@@ -181,6 +181,56 @@
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0pt}
 
+% 让 plain 页（章首页、目录页等）也使用相同的页眉页脚样式
+% 章节首页使用的 plain 样式：与正文一致的页眉页脚
+\fancypagestyle{plain}{%
+  \fancyhf{}
+  \fancyhead[L]{\sffamily\color{Nord3}\footnotesize \leftmark}
+  \fancyhead[R]{\sffamily\color{Nord3}\footnotesize \CourseName}
+  \fancyfoot[C]{%
+    \tikz\node[
+      rectangle,
+      fill=Nord10,
+      text=white,
+      rounded corners=3pt,
+      inner sep=4pt,
+      minimum width=2.2em
+    ]{\small\thepage};%
+  }
+  \renewcommand{\headrulewidth}{0pt}
+  \renewcommand{\footrulewidth}{0pt}
+}
+
+% 目录页专用样式：去掉页眉，保留统一页脚
+\fancypagestyle{tocplain}{%
+  \fancyhf{}
+  \fancyfoot[C]{%
+    \tikz\node[
+      rectangle,
+      fill=Nord10,
+      text=white,
+      rounded corners=3pt,
+      inner sep=4pt,
+      minimum width=2.2em
+    ]{\small\thepage};%
+  }
+  \renewcommand{\headrulewidth}{0pt}
+  \renewcommand{\footrulewidth}{0pt}
+}
+
+% 强制 \tableofcontents 使用 tocplain（无页眉、统一页脚）
+\makeatletter
+\let\oldtableofcontents\tableofcontents
+\renewcommand{\tableofcontents}{%
+  \begingroup
+    \let\ps@plain\ps@tocplain
+    \pagestyle{tocplain}
+    \oldtableofcontents
+    \thispagestyle{tocplain}
+  \endgroup
+}
+\makeatother
+
 % ===================== 8. 链接设置 =====================
 \usepackage{hyperref}
 
@@ -283,7 +333,7 @@
 % ===================== 摘要页（不使用列表，全文段落） =====================
 \clearpage
 \begin{AbstractBox}
-本报告将“相关工作综述”与“当前项目实验结果”合并呈现。综述部分围绕自然语言刺激下的语义脑图绘制 \cite{Huth2016,Zhang2020}、预测编码与集成建模框架 \cite{Schrimpf2021,Antonello2023,Kumar2024}、自监督语音表征与大脑对齐 \cite{Baevski2020,Millet2023}、组合语义与上下文表征 \cite{Peters2018,Devlin2019,Radford2019,Toneva2022} 以及连续语义重构的解码方向 \cite{Tang2023}，建立本实验的理论与方法背景。实验部分基于当前项目目录中已生成的结果文件撰写，所有数值均来自 \texttt{results/summary.csv}、\texttt{results/roi.csv} 与各模型目录下保存的相关图（\texttt{corr\_layer*.npy} 以及融合的 \texttt{corr\_*.npy}）。研究目标是在故事听觉 fMRI 数据上，对比文本模型、音频模型、多模态模型在不同层与不同时间窗口（TR 窗口）条件下的脑预测性能，并结合 ROI 统计与可视化图像分析区域偏好。实验采用统一的对齐、降维与时延展开流程，并在多被试上进行单次训练/测试划分的岭回归评估，从而得到可复现的全脑相关图。报告呈现两类图像：其一为统计图（模型对比与窗口趋势、ROI Top20），由 \texttt{report/scripts/make\_figures.py} 读取现有结果自动生成；其二为脑图，可视化来自 \texttt{src/run\_plot\_corr\_maps.py} 对保存的 corr map 进行映射绘制。
+本报告在自然故事听觉范式的 fMRI 数据上，系统比较了不同预训练模型表征与大脑反应的对齐程度。理论背景部分围绕自然语音语义地图 \cite{Huth2016,Zhang2020}、集成建模与预测加工框架 \cite{Schrimpf2021,Antonello2023,Kumar2024}、自监督语音表征与皮层层级对齐 \cite{Baevski2020,Millet2023}、上下文表征与组合语义 \cite{Peters2018,Devlin2019,Radford2019,Toneva2022} 以及连续语义重构的解码路径 \cite{Tang2023} 展开。实验部分严格基于当前仓库中已经生成的结果文件撰写，全部数值可追溯到 \texttt{results/summary.csv}、\texttt{results/roi.csv}、\texttt{results/fusion/**/log.txt} 与对应的相关图数组（单模态为 \texttt{corr\_layer*.npy}，融合为 \texttt{corr\_*.npy}）。在统一的对齐、降维（PCA）与时延展开（FIR）流程下，我们在多被试上训练线性岭回归编码模型，并以测试集相关系数刻画“可预测性”。结果表明，在当前设置下，音频与多模态模型显著优于纯文本语义表征，并且 TR 窗口长度对音频与融合性能具有决定性影响；在融合实验中，最佳文本层与最佳音频层的组合呈现非单调交互。报告同时呈现统计图与脑图两类证据：统计图由 \texttt{report/scripts/make\_figures.py} 直接从结果表生成，脑图由 \texttt{src/run\_plot\_corr\_maps.py} 将相关图映射到皮层表面生成并保存到 \texttt{report/figures/brainmaps/}。
 \end{AbstractBox}
 \clearpage
 
@@ -300,48 +350,40 @@
   \hypersetup{linkcolor=Nord0} 
   % 避免 \tableofcontents 内部的清页指令让目录另起一整页
   \begingroup
+    % 目录页使用无页眉的 tocplain 样式
+    \makeatletter
+    \let\ps@plain\ps@tocplain
+    \makeatother
+    \pagestyle{tocplain}
+    \thispagestyle{tocplain}
     \let\clearpage\relax
     \let\cleardoublepage\relax
-    \tableofcontents
+    \par\tableofcontents
   \endgroup
   \restoregeometry
 }
 
 % ===================== 正文（章节拆分在独立文件中） =====================
-\chapter{第一部分：相关工作综述与研究动机}
-本部分用于建立实验的研究语境与方法参照。自然叙事刺激下的语义地图研究表明，语义信息在皮层上呈现分布式组织，并跨越传统语言区与默认模式网络等大尺度系统 \cite{Huth2016,Zhang2020}。在模型侧，集成对齐研究将不同语言模型与脑数据进行系统比较，指出架构、训练目标与层级表示共同影响对齐程度 \cite{Schrimpf2021,Antonello2023,Kumar2024}。在语音与多模态方向，自监督语音表征能够在较少标注下形成与人类加工相近的表征梯度 \cite{Baevski2020,Millet2023}。在语义组成与上下文依赖方面，ELMo、BERT、GPT-2 等模型提供了不同的上下文表示机制，为探查“组合意义”在脑中的可测表现提供了可操作的特征空间 \cite{Peters2018,Devlin2019,Radford2019,Toneva2022}。与此同时，连续语义重构工作展示了以语义而非字面文本为目标的解码可能性，为“编码模型”与“解码模型”的统一评估提供了参考 \cite{Tang2023}。
 
-\input{chapters/01_introduction}
-\input{chapters/02_predictive_coding}
-\input{chapters/03_semantic_mapping}
-\input{chapters/04_learning_mechanisms}
-\input{chapters/05_compositional_semantics}
-\input{chapters/06_decoding_reconstruction}
-\input{chapters/07_methodology}
-\input{chapters/08_crosslingual_multimodal}
-\input{chapters/09_discussion}
-
-\chapter{第二部分：实验设计、方法与结果}
+\chapter{背景与相关工作}
 \input{experiment_chapters/01_background}
+
+\chapter{实验设计与方法}
 \input{experiment_chapters/02_data_alignment}
 \input{experiment_chapters/03_models_features}
 \input{experiment_chapters/04_encoding_evaluation}
+
+\chapter{实验结果}
 \input{experiment_chapters/05_text_results}
 \input{experiment_chapters/06_audio_results}
 \input{experiment_chapters/07_multimodal_results}
 \input{experiment_chapters/08_fusion_results}
-\input{experiment_chapters/09_roi_discussion}
-\input{experiment_chapters/10_conclusion}
 
-% ===================== 附录：结果文件位置（不逐行嵌入） =====================
-\appendix
-\chapter{附录：结果文件位置与复现说明}
-本报告的所有数值与脑图均来自项目根目录下的 \texttt{results/} 与 \texttt{report/figures/}。
-其中，模型评估与汇总表位于 \texttt{results/summary.csv}；ROI 统计位于 \texttt{results/roi.csv}；
-各模型的相关图数组为 \texttt{corr\_layer*.npy}（融合为 \texttt{corr\_*.npy}），保存在对应的
-\texttt{results/text/}、\texttt{results/audio/}、\texttt{results/multimodal/} 与 \texttt{results/fusion/} 目录下。
-统计图由 \texttt{report/scripts/make\_figures.py} 读取上述结果自动生成到 \texttt{report/figures/}；
-脑图由 \texttt{src/run\_plot\_corr\_maps.py} 读取相关图数组并输出到 \texttt{report/figures/brainmaps/}。
+\chapter{讨论}
+\input{experiment_chapters/09_roi_discussion}
+
+\chapter{结论}
+\input{experiment_chapters/10_conclusion}
 
 \clearpage
 \bibliographystyle{plain}

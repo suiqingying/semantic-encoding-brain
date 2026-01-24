@@ -1,47 +1,22 @@
 \section{编码模型、评价指标与输出结构}
-\subsection{从 TR 特征到 BOLD：线性编码模型的形式化}
-设某一类特征在 TR 级别上形成矩阵 $X\in\mathbb{R}^{T\times D}$，其中 $T$ 为有效 TR 数量、$D$ 为特征维度；对应被试的 fMRI ROI 信号为 $Y\in\mathbb{R}^{T\times V}$，其中 $V=360$ 为 ROI 数量。线性编码模型采用岭回归，对每个 ROI 同时求解权重矩阵 $W\in\mathbb{R}^{D\times V}$：
-\begin{equation}
-\hat{W}=\arg\min_{W}\ \lVert XW-Y\rVert_{2}^{2}+\alpha\lVert W\rVert_{2}^{2}.
-\end{equation}
-这里 $\alpha$ 为 $L_{2}$ 正则强度。岭回归的优势在于当 $D$ 较大且特征存在共线性时，仍能得到数值稳定的解，并在有限样本下缓解过拟合。当前工程中 \texttt{DEFAULT\_ALPHAS} 提供了若干候选正则强度，但由于 \texttt{DEFAULT\_KFOLD=1}，实际训练并未进行 K 折交叉验证选择超参，而是在单次训练/测试划分下使用候选列表中的第一个 $\alpha$。因此，当前结果可被理解为一套“固定正则的线性基线”，其主要价值在于为不同特征与不同层提供统一且可追溯的对比基准。
+本文采用线性编码模型把刺激特征映射到 fMRI 响应。编码建模的选择不是因为线性模型能够穷尽语言加工的非线性机制，而是因为在自然故事范式下，线性正则化回归提供了一条可复现、可解释且便于跨模型比较的基线。语义地图研究以体素级（或 ROI 级）正则化线性回归在未见故事上预测 fMRI，并据此绘制语义选择性地图 \cite{Huth2016}；集成建模工作进一步强调统一评估协议的重要性，使不同模型与不同层的差异更可能来自表征本身而非评估细节 \cite{Schrimpf2021}。在机制解释层面，Antonello 与 Huth 的讨论提示我们应避免把编码性能直接等同于某一种训练目标或单一认知机制，因此本文将编码性能视为一种“表征可预测性”指标，并通过多模型、多层与多窗口的系统比较减少偶然性 \cite{Antonello2023}。
 
-这种“线性编码 + 严格时间对齐 + 在未见刺激上评估”的组合并非偶然，而是与自然叙事语义地图与集成建模工作在评价逻辑上保持一致。语义地图工作通过正则化线性回归在新故事上预测 fMRI，并据此把“可预测性”作为语义表征存在的证据 \cite{Huth2016}。大规模集成建模进一步强调统一评估协议的重要性，用以公平比较不同模型与不同任务，从而把差异尽可能归因到表示本身 \cite{Schrimpf2021}。与此同时，关于“预测编码是否是对齐来源”的争论提示我们，编码性能的提升既可能来自预测目标，也可能来自更一般的特征发现与结构归纳，因此需要在多模型、多层与多窗口条件下稳健比较并保持解释克制 \cite{Antonello2023,Kumar2024}。
+\subsection{输入特征的标准化与降维}
+对每一种特征，我们先对每一维做标准化，使其在样本维上的均值为零、方差为一。标准化的作用是避免不同特征维度的尺度差异影响岭回归的惩罚项，从而使正则化主要反映信息量而非尺度。随后，我们在特征维上执行主成分分析（PCA），默认降到 250 维。降维的动机有二：其一，预训练模型的隐藏维度通常较高且存在共线性，PCA 有助于稳定回归解；其二，后续时延展开会把特征维度按窗口倍数放大，若不降维会显著增加计算量并降低可重复性。融合实验在拼接后的联合特征空间上执行 PCA，从而使主成分同时反映文本与音频方差结构。
 
-\subsection{BOLD 延迟建模：PCA 降维与 FIR 延迟展开}
-从预训练模型得到的 TR 特征往往维度较高，直接回归会带来计算成本与病态风险。因此，本项目在回归前对 TR 特征做 PCA 降维，默认保留 250 维（\texttt{DEFAULT\_PCA\_DIM=250}）。随后，为显式建模 BOLD 延迟与时间扩散，本项目采用 FIR（finite impulse response）延迟展开：将每个 TR 的特征与若干个过去 TR 的特征按时间顺序拼接，形成扩展特征矩阵。当前默认设置为窗口长度 4、偏移 1（\texttt{DEFAULT\_FIR\_WINDOW=4}、\texttt{DEFAULT\_FIR\_OFFSET=1}），这意味着在预测某一 TR 的 fMRI 时，模型可以使用从较早 TR 开始、覆盖若干步历史的刺激表示，从而在不引入非线性结构的前提下捕捉响应延迟。
+\subsection{FIR 时延展开与线性岭回归}
+为处理 BOLD 信号相对刺激的延迟与时间平滑，我们对 TR 级特征做 FIR（finite impulse response）时延展开。设原始特征矩阵为 $X \in \mathbb{R}^{T \times D}$，我们构造延迟窗口长度为 $W$、偏移为 $O$ 的拼接特征
+\[
+\tilde{X}_t = [X_{t-O}, X_{t-O-1}, \ldots, X_{t-O-(W-1)}] \in \mathbb{R}^{W D},
+\]
+从而把“当前 BOLD”表示为过去若干个 TR 内刺激特征的线性组合。本文在已生成结果对应的默认设置中采用 $W=4$、$O=1$。在此基础上，我们对每个 ROI 分别拟合岭回归：
+\[
+\hat{Y} = \tilde{X} \beta,\quad \beta = \arg\min_{\beta} \|Y-\tilde{X}\beta\|_2^2 + \alpha \|\beta\|_2^2,
+\]
+其中 $Y \in \mathbb{R}^{T \times R}$ 为 ROI 级 fMRI 响应，$R$ 为 ROI 数。岭回归在高维共线特征下稳定且易于比较，是自然故事编码建模的常用选择。
 
-\subsection{数据划分与多被试汇总}
-编码模型以每个被试为单位独立训练与评估：对每个被试的 $(X,Y)$ 在时间轴上做截断以去除边界 TR，然后按时间顺序切分为训练段与测试段（当前实现默认测试比例为 0.2）。在测试段上计算预测信号与真实信号的相关系数，得到长度为 360 的相关向量（corr map）。为得到多被试的总体性能，项目对每个被试的 corr map 求均值作为该被试的总体分数，再对所有被试分数计算均值与标准差并写入 \texttt{log.txt}。因此，报告中“平均值 $\pm$ 标准差”对应的是跨被试的统计，而不是跨折的统计。
+\subsection{训练/测试划分、多被试汇总与指标定义}
+本文的评估以“未见数据上的相关系数”为核心指标。对每个被试，我们先在时间轴两端各排除 10 个 TR，以降低边界效应。随后采用单次训练/测试划分：按时间顺序以前 80\% 的 TR 作为训练集、后 20\% 的 TR 作为测试集。该划分避免了 K 折交叉验证带来的显著计算开销，使多模型多层多窗口的系统比较在当前硬件条件下可行。为保证不同模型之间的可比性，我们在所有模型上使用相同的划分方式与相同的正则化系数设置，并在多被试上重复该评估。对每个 ROI，我们计算测试集预测值与真实值的皮尔逊相关系数，得到该被试的 corr map；再对 corr map 的 ROI 维做均值得到该被试的平均相关。最终报告的均值与标准差来自对所有被试平均相关的汇总。
 
-\subsection{评价指标与 corr map 的含义}
-评价指标为 Pearson 相关系数。对第 $v$ 个 ROI，设测试段真实信号为 $y_{v}$、预测信号为 $\hat{y}_{v}$，则相关为
-\begin{equation}
-r_{v}=\frac{\sum_{t}(\hat{y}_{v,t}-\overline{\hat{y}_{v}})(y_{v,t}-\overline{y_{v}})}{\sqrt{\sum_{t}(\hat{y}_{v,t}-\overline{\hat{y}_{v}})^{2}}\sqrt{\sum_{t}(y_{v,t}-\overline{y_{v}})^{2}}}.
-\end{equation}
-将所有 ROI 的 $r_{v}$ 组成向量即可得到 corr map。项目保存的 \texttt{corr\_layer*.npy} 即为该向量，长度为 360，前 180 对应左半球 ROI，后 180 对应右半球 ROI。可视化时，\texttt{src/viz.py} 读取 HCP-MMP 的 ROI 标签文件，将 ROI 相关值映射回 fsaverage 表面顶点并绘制，输出以左右半球的外侧与内侧视图组成的四联图，保证角度稳定且信息密集。
-
-\subsection{输出文件结构与可追溯性}
-本项目输出结构以 \texttt{results/} 为根。文本、音频、多模态的线性编码结果分别位于 \texttt{results/text/}、\texttt{results/audio/}、\texttt{results/multimodal/}；每个配置目录包含 \texttt{log.txt} 与若干 \texttt{corr\_layer*.npy}。融合结果位于 \texttt{results/fusion/}，其中每个融合对目录包含融合日志与多个融合 corr map 文件（例如 \texttt{corr\_t9\_a6\_ctx200\_tr1.npy}）。报告中的统计图由 \texttt{report/scripts/make\_figures.py} 从 \texttt{results/summary.csv} 与 \texttt{results/roi.csv} 生成，脑图由 \texttt{src/run\_plot\_corr\_maps.py} 从 corr map 生成并保存到 \texttt{report/figures/brainmaps/}。该设计使得报告中每一张图都能追溯回唯一的源文件路径，便于复核与增量补充实验。
-
-\begin{figure}[H]
-\centering
-\begin{tikzpicture}[node distance=0.9cm, font=\small, scale=0.95, transform shape]
-\node[draw, rounded corners, fill=BrandColor!4, inner sep=6pt] (stim) {刺激（文本/音频）};
-\node[draw, rounded corners, fill=BrandColor!4, right=1.0cm of stim, inner sep=6pt] (feat) {预训练模型特征（多层）};
-\node[draw, rounded corners, fill=BrandColor!4, right=1.0cm of feat, inner sep=6pt] (tr) {TR 聚合与对齐};
-\node[draw, rounded corners, fill=BrandColor!4, right=1.0cm of tr, inner sep=6pt] (pca) {PCA(250)};
-
-\node[draw, rounded corners, fill=BrandColor!4, below=1.0cm of feat, inner sep=6pt] (fir) {FIR(4,1)};
-\node[draw, rounded corners, fill=BrandColor!4, right=1.0cm of fir, inner sep=6pt] (ridge) {岭回归};
-\node[draw, rounded corners, fill=BrandColor!4, right=1.0cm of ridge, inner sep=6pt] (corr) {corr map(360)};
-
-\draw[->, thick] (stim) -- (feat);
-\draw[->, thick] (feat) -- (tr);
-\draw[->, thick] (tr) -- (pca);
-\draw[->, thick] (pca) |- (fir);
-\draw[->, thick] (fir) -- (ridge);
-\draw[->, thick] (ridge) -- (corr);
-\end{tikzpicture}
-\caption{线性编码建模流水线概览。为避免版面溢出，示意图采用两行布局，但顺序与实现一致。}
-\end{figure}
+\subsection{输出文件与可追溯性}
+为保证论文结论可核验，本文所有结果均对应到仓库中已生成的文件。单模态与多模态（Whisper/CLAP）结果以 \texttt{results/GROUP/MODEL/SETTING/} 为目录结构，每个配置包含 \texttt{log.txt} 与若干 \texttt{corr\_layer*.npy}，前者记录多被试均值与标准差，后者保存 ROI 级 corr map。融合结果保存到 \texttt{results/fusion/TEXT\_MODEL\_\_AUDIO\_MODEL/}，每一组层与窗口配置保存为 \texttt{corr\_t*\_a*\_ctx*\_tr*.npy} 并在对应 \texttt{log.txt} 中记录统计量。统计图由 \texttt{report/scripts/make\_figures.py} 从 \texttt{results/summary.csv}、\texttt{results/roi.csv} 与融合日志聚合生成到 \texttt{report/figures/}；皮层脑图由 \texttt{src/run\_plot\_corr\_maps.py} 将 \texttt{corr\_*.npy} 映射到皮层表面并输出到 \texttt{report/figures/brainmaps/}。这种“数值—可视化—文件路径”的对应关系保证了本文叙述可以被逐项复现与检查。

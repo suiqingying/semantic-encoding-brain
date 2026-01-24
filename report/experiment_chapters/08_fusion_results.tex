@@ -1,16 +1,14 @@
-\section{文本+音频融合结果：覆盖范围、最优配置与层交互结构}
-融合实验的输出位于 \texttt{results/fusion/}。与单模态结果的 \texttt{corr\_layer*.npy} 命名不同，融合结果的文件名包含文本层、音频层、文本上下文窗口与音频 TR 窗口，例如 \texttt{corr\_t6\_a9\_ctx200\_tr3.npy}。融合的核心思想是把文本与音频在 TR 级对齐后进行特征拼接，再在同一套 PCA+FIR+岭回归框架下评估其对 fMRI 的可预测性。实现上，\texttt{src/run\_multimodal\_fusion.py} 对文本与音频分别做标准化（\texttt{StandardScaler}），将两者在维度上拼接得到融合特征，再在拼接后的联合空间执行 PCA（默认 250 维），最后做 FIR 延迟展开并回归到 360 个 ROI。由于 PCA 在联合空间上进行，主成分同时反映文本与音频的方差结构，因此“融合是否有效”不仅取决于单模态信息是否互补，也取决于联合空间中哪些方向更易被线性回归利用。
+\section{实验结果（四）：文本--音频特征融合}
+融合实验的目标是在不改变编码模型与评估协议的前提下，检验文本特征与音频特征是否在 TR 级时间轴上提供互补信息。与多模态模型“在预训练阶段引入跨模态对齐约束”不同，本文的融合采取更直接的特征级拼接：对同一 TR 的文本特征与音频特征分别标准化后在特征维上拼接，再在拼接后的联合空间执行 PCA，随后进入同一 FIR+岭回归评估流程。该实现对应 \texttt{results/fusion/} 目录，其中文本与音频模型对以子目录区分，具体配置以 \texttt{corr\_t*\_a*\_ctx*\_tr*.npy} 命名并在 \texttt{log.txt} 中记录统计量。
 
-与此前仅有少量融合记录不同，当前目录中融合已经形成较大规模的可追溯输出：在 \texttt{ctx=200} 的固定设置下，融合覆盖 \texttt{tr\_win=1/2/3} 三种窗口、3 个文本模型与 3 个音频模型，以及多层组合，最终在 \texttt{results/fusion/} 下生成大量 \texttt{corr\_t*\_a*\_ctx*\_tr*.npy} 文件并写入对应的 \texttt{log.txt}。由于实际可运行的层集合受到“是否存在对应特征文件”的约束，融合并非严格的全笛卡尔积；但在当前结果中，融合日志已经包含 540 条可解析的配置记录，这使得我们可以直接在融合内部比较不同 TR 窗口、不同模型对与不同层组合的影响。
+当前已生成的融合结果覆盖固定文本上下文窗口 $\texttt{ctx}=200$、三种音频 TR 窗口（1TR、2TR、3TR）、三种文本模型与三种音频模型，并在多层组合上形成可解析的配置集合。以融合日志解析得到的 540 条记录为基础，融合的全局最优配置出现在 $\texttt{tr}=3$：RoBERTa-base 的 $\texttt{text\_layer}=1$ 与 WavLM-base-plus 的 $\texttt{audio\_layer}=9$ 组合达到 $0.0535 \pm 0.0266$。分窗口看，$\texttt{tr}=1$ 的最优配置为 RoBERTa-base（layer1）+ HuBERT（layer4），均值相关为 $0.0330 \pm 0.0179$；$\texttt{tr}=2$ 的最优配置为 RoBERTa-base（layer1）+ WavLM（layer9），均值相关为 $0.0431 \pm 0.0212$；$\texttt{tr}=3$ 的最优配置即上述全局最优。图 \ref{fig:fusion_best_bar} 与图 \ref{fig:fusion_tr_trend} 分别展示融合 Top 配置的整体对比与窗口趋势，清晰呈现“窗口增大带来系统性提升”的规律。
 
-图 \ref{fig:fusion_best_bar} 给出融合中均值相关最高的 Top12 配置，图 \ref{fig:fusion_tr_trend} 给出融合在不同 TR 窗口下的全局最优趋势。两张图共同表明：融合最优值随着 TR 窗口增大而显著上升，当前全局最优出现在 \texttt{tr\_win=3}。基于融合日志的扫描，融合的全局最优配置为 \texttt{bert-base-uncased} 与 \texttt{microsoft/wavlm-base-plus} 的组合，其均值相关为 0.0535（标准差 0.0216），对应 \texttt{text\_layer=6}、\texttt{audio\_layer=9}、\texttt{ctx\_words=200}、\texttt{tr\_win=3}。该数值仍低于音频与多模态在 6TR 条件下的 0.08--0.09 量级结果，因此融合是否能在更长窗口下进一步接近或超过强音频基线，需要在后续补齐 \texttt{tr\_win=6} 与更完整特征覆盖后才能回答。本报告在此仅对当前已生成的融合结果进行严格陈述与可视化总结。
+融合结果的关键问题并不仅是“是否提高一个全局均值”，而是“文本层与音频层是否呈现交互结构”。若融合收益仅由某一侧单模态强信号驱动，则不同层组合应当在二维网格上近似单调；相反，若存在互补与匹配，则可能出现局部最优区域。图 \ref{fig:fusion_heatmap} 在固定 $\texttt{ctx}=200$、$\texttt{tr}=3$ 与全局最优模型对（RoBERTa + WavLM）条件下给出二维性能热图，可以看到性能分布并非简单随层号单调变化，而是在若干组合附近形成高值区域。这一现象与“层级位置决定表征抽象度与可用信息类型”的观点一致 \cite{Schrimpf2021,Antonello2023,Kumar2024}，并为后续更系统的跨层融合策略提供了直接的经验约束。
 
-融合的重要问题不是“是否只提升一个数值”，而是“文本层与音频层是否存在交互”。为此，图 \ref{fig:fusion_heatmap} 以全局最优模型对为例，在固定 \texttt{ctx=200, tr=3} 的条件下绘制 \texttt{text\_layer} 与 \texttt{audio\_layer} 的二维性能热图。该图在数值上展示了一个稳定事实：不同层组合的性能并非单调随层数增加而提升，而是存在若干局部最优区域，提示融合效果依赖于两种表征的“相对抽象层级匹配”，而非简单地拼接任意深层即可获益。
+空间分布方面，图 \ref{fig:fusion_montage} 展示融合 Top 配置的脑图对照，图 \ref{fig:fusion_best_map} 展示全局最优融合配置的单独脑图，从而把融合结果纳入与单模态一致的“统计图—ROI 图—脑图”证据链。需要强调的是，融合最优均值相关（约 0.053）仍明显低于音频与多模态在 6TR 条件下的 0.08--0.09 量级强基线，因此在当前结果覆盖范围内，特征拼接融合并未带来超越强音频模型的整体优势。该结论并不意味着跨模态互补不存在，而更可能反映当前融合只覆盖到 3TR 的时间尺度、以及联合 PCA 在有限样本下对跨模态方差结构的选择性等因素。对这些因素的分析将放在讨论部分展开。
 
-空间层面上，图 \ref{fig:fusion_montage} 展示融合 Top6 配置的脑图对照，图 \ref{fig:fusion_best_map} 展示全局最优融合配置的单独脑图。两类图像的作用是把融合结果纳入与单模态一致的“统计图—ROI 图—脑图”证据链，使得后续可以在相同视角下对比融合与单模态的空间分布差异，并检查融合是否在部分 ROI 上更接近文本或音频的模式。
-
-\InsertFig{fusion_best.png}{0.96\linewidth}{融合：Top12 配置的全脑均值相关对比（由 report/scripts/make\_figures.py 从 results/fusion/**/log.txt 解析生成）。}{fig:fusion_best_bar}
-\InsertFig{fusion_tr_window_trend.png}{0.86\linewidth}{融合：不同 TR 窗口下的全局最优性能趋势（由 report/scripts/make\_figures.py 从融合日志解析生成）。}{fig:fusion_tr_trend}
-\InsertFig{fusion_heatmap_bestpair.png}{0.78\linewidth}{融合热图：全局最优模型对（BERT + WavLM）在 ctx=200、tr=3 条件下的层交互结构（由 report/scripts/make\_figures.py 解析融合日志并绘制）。}{fig:fusion_heatmap}
-\InsertFig{fusion_montage.png}{0.96\linewidth}{融合脑图对照：融合 Top6 配置的 corr map 脑图组合（由 src/run\_plot\_corr\_maps.py 从 results/fusion 的 corr\_*.npy 选取并绘制）。}{fig:fusion_montage}
-\InsertFig{fusion_bert-base-uncased__microsoft_wavlm-base-plus_corr_t6_a9_ctx200_tr3.png}{0.92\linewidth}{全局最优融合配置脑图：bert-base-uncased（layer6）+ WavLM-base-plus（layer9），ctx=200，tr=3（由 src/run\_plot\_corr\_maps.py 从对应 corr\_*.npy 绘制）。}{fig:fusion_best_map}
+\InsertFig{fusion_best.png}{0.96\linewidth}{融合：Top 配置的全脑均值相关对比（从 \texttt{results/fusion/**/log.txt} 解析聚合）。}{fig:fusion_best_bar}
+\InsertFig{fusion_tr_window_trend.png}{0.86\linewidth}{融合：不同 TR 窗口下的全局最优性能趋势（从融合日志解析聚合）。}{fig:fusion_tr_trend}
+\InsertFig{fusion_heatmap_bestpair.png}{0.78\linewidth}{融合热图：RoBERTa + WavLM 在 $\texttt{ctx}=200$、$\texttt{tr}=3$ 条件下的层交互结构（从融合日志解析生成）。}{fig:fusion_heatmap}
+\InsertFig{fusion_montage.png}{0.96\linewidth}{融合脑图对照：融合 Top 配置的 corr map 脑图组合。}{fig:fusion_montage}
+\InsertFig{fusion_roberta-base__microsoft_wavlm-base-plus_corr_t1_a9_ctx200_tr3.png}{0.92\linewidth}{全局最优融合配置脑图：RoBERTa-base（layer1）+ WavLM-base-plus（layer9），$\texttt{ctx}=200$，$\texttt{tr}=3$。}{fig:fusion_best_map}

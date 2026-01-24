@@ -1,11 +1,13 @@
-\section{文本模型结果：层次对齐与区域分布}
-文本模型部分的所有结论均来自 \texttt{results/summary.csv} 中 \texttt{/text/} 相关条目，以及相应目录下的 \texttt{corr\_layer*.npy}。本次结果对应的文本上下文窗口固定为 200 token（目录名 \texttt{win200}），词级表示在对齐阶段按 TR 内平均得到 TR 级输入特征。该设置直接决定了文本表示所覆盖的语义时间尺度：当叙事结构跨越更长时间范围时，固定窗口可能截断长程依赖；当 TR 内词数较少时，TR 内平均会引入更强的采样噪声。尽管如此，这一固定设置为跨模型的层比较提供了可复现的对照条件。
+\section{实验结果（一）：文本模型}
+文本模型结果来自 \texttt{results/summary.csv} 中 \texttt{/text/} 条目及对应的 \texttt{corr\_layer*.npy}。本次文本特征采用固定 200 token 上下文窗口，并将词级表示在 TR 内取平均得到 TR 级特征。该设置在方法上提供了稳定对照，但也意味着文本表征受限于窗口长度与 TR 内词数波动。由于本文不引入超出已完成实验的推断，结果部分仅对当前设置下的数值与空间分布作出可追溯陈述。
 
-图 \ref{fig:text_best} 展示了三种文本模型各自最佳层在全脑均值相关上的对比。当前完成的结果显示，\texttt{roberta-base} 的最佳层为 layer4，均值相关约为 0.0153；\texttt{gpt2} 的最佳层为 layer12，均值相关约为 0.0107；\texttt{bert-base-uncased} 的最佳层为 layer6，均值相关约为 0.0084。就数量级而言，文本模型在本任务中的可预测性明显弱于音频与多模态模型。由于本项目没有在同一模型中显式控制“音频线索是否存在”，因此我们在此不对“语义贡献是否被声学驱动掩盖”做超出已完成结果的推断，而是把文本结果视为在当前时间对齐与线性框架下的一组可追溯基线。
+三种文本模型的最佳层均值相关分别为：RoBERTa-base 在 layer4 达到 $0.0153 \pm 0.0160$，GPT-2 在 layer12 达到 $0.0107 \pm 0.0137$，BERT-base 在 layer6 达到 $0.0084 \pm 0.0161$。图 \ref{fig:text_best} 以柱状图形式对比了三种模型的最佳层表现。就数量级而言，文本模型在本任务中的可预测性显著低于音频与多模态模型（后文将给出 0.08--0.09 量级的强基线），因此文本结果在本文中主要承担“纯语义/文本基线”的作用，用于在相同评估协议下刻画语义特征在当前数据与时间尺度下的可预测上限。
 
-为了满足“同一类模型的脑图对照”这一展示要求，图 \ref{fig:text_montage} 将本次文本模型各自最佳层的 corr map 统一绘制并组合成一张对照图。该图使用同一套 ROI 到顶点映射与同一色标策略，能够直观看到文本模型在空间分布上的共同点与差异。作为更细粒度的示例，图 \ref{fig:text_roberta_map} 给出 RoBERTa 最佳层（win200，layer4）的单独脑图，图 \ref{fig:text_roberta_roi} 给出相同配置下 ROI 层面的 Top20，用于与后续音频、多模态结果在区域偏好上做直接对照。
+空间分布方面，图 \ref{fig:text_montage} 将三种文本模型的最佳层相关图并置，便于观察在同一绘图视角与同一色标下的差异。为避免把跨模型差异误读为绘图设置差异，本图的每一张脑图都来自相同的 corr map 到皮层表面映射流程。进一步地，图 \ref{fig:text_roberta_map}、图 \ref{fig:text_gpt2_map} 与图 \ref{fig:text_bert_map} 分别展示三种模型在其最佳层的单独脑图，从而便于在后续讨论 ROI 偏好与空间模式时引用。尽管文本模型整体相关较低，图 \ref{fig:text_roberta_roi} 的 ROI Top20 仍能为“哪些区域在当前框架下更容易被文本语义预测”提供定量入口，并可与音频/多模态的 ROI 分布形成对照。
 
-\InsertFig{text_best.png}{0.86\linewidth}{文本模型最佳层的全脑均值相关系数（由 report/scripts/make\_figures.py 从 results/summary.csv 生成）。}{fig:text_best}
-\InsertFig{text_class_montage.png}{0.96\linewidth}{文本模型类别脑图对照：RoBERTa（win200，layer4）、GPT2（win200，layer12）、BERT（win200，layer6）（由 src/run\_plot\_corr\_maps.py 从对应 corr\_layer*.npy 绘制并组合）。}{fig:text_montage}
-\InsertFig{text_roberta-base_win200_corr_layer4.png}{0.92\linewidth}{RoBERTa-base（win200，layer4）相关图可视化（由 src/run\_plot\_corr\_maps.py 从 corr\_layer4.npy 绘制）。}{fig:text_roberta_map}
-\InsertFig{roi_roberta_l4.png}{0.86\linewidth}{RoBERTa-base（win200，layer4）对应 corr map 的 ROI Top20（由 report/scripts/make\_figures.py 从 results/roi.csv 生成）。}{fig:text_roberta_roi}
+\InsertFig{text_best.png}{0.86\linewidth}{文本模型最佳层的全脑均值相关系数（从 \texttt{results/summary.csv} 聚合）。}{fig:text_best}
+\InsertFig{text_class_montage.png}{0.96\linewidth}{文本模型最佳层脑图对照：RoBERTa（win200，layer4）、GPT-2（win200，layer12）、BERT（win200，layer6）。}{fig:text_montage}
+\InsertFig{text_roberta-base_win200_corr_layer4.png}{0.92\linewidth}{RoBERTa-base（win200，layer4）相关图可视化。}{fig:text_roberta_map}
+\InsertFig{text_gpt2_win200_corr_layer12.png}{0.92\linewidth}{GPT-2（win200，layer12）相关图可视化。}{fig:text_gpt2_map}
+\InsertFig{text_bert-base-uncased_win200_corr_layer6.png}{0.92\linewidth}{BERT-base（win200，layer6）相关图可视化。}{fig:text_bert_map}
+\InsertFig{roi_roberta_l4.png}{0.86\linewidth}{RoBERTa-base（win200，layer4）对应相关图的 ROI Top20（从 \texttt{results/roi.csv} 聚合）。}{fig:text_roberta_roi}
