@@ -113,7 +113,8 @@
     \vspace{0pt}% 强制与右栏顶部对齐
     {\TitleCJK\bfseries\color{Nord10}#1}\par
     {\sffamily\small\color{Nord3}学号：#2}\par
-    {\sffamily\small\color{Nord3}邮箱：\urlstyle{same}\nolinkurl{#3}}%
+    {\sffamily\small\color{Nord3}邮箱：\urlstyle{same}%
+      \begingroup\def\UrlBreaks{\do\/\do\-\do\.\do\_}\nolinkurl{#3}\endgroup}%
   }%
 }
 

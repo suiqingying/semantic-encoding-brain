@@ -1,25 +1,16 @@
 \section{背景与研究问题}
-\begin{tcolorbox}[
-  enhanced,
-  breakable,
-  colback=Nord6,
-  colframe=Nord8,
-  frame hidden,
-  leftrule=4pt,
-  arc=2mm,
-  left=12pt,right=10pt,top=10pt,bottom=10pt
-]
-{\TitleCJK\bfseries\Large\color{Nord10}小组成员与分工}\par
-\vspace{0.6em}
+{\TitleCJK\bfseries\Large\color{Nord0}小组成员与分工}\par
+\vspace{0.4em}
 {\renewcommand{\arraystretch}{1.25}%
-\begin{tabularx}{\linewidth}{@{}p{0.34\linewidth}X@{}}
-\MemberInfo{\StudentName}{\StudentID}{panyuxuan231@mails.ucas.ac.cn} & \vspace{0pt}负责整体方案设计与实现；完成文本/音频/多模态与融合特征提取、线性编码模型与评估、ROI 分析与可视化；整理结果并撰写报告。\\[0.6em]
-\MemberInfo{林俊杰}{N/A}{N/A} & \vspace{0pt}未参与本次实验执行与代码实现。\\[0.6em]
-\MemberInfo{王煜}{N/A}{N/A} & \vspace{0pt}未参与本次实验执行与代码实现。\\[0.6em]
-\MemberInfo{李向阳}{N/A}{N/A} & \vspace{0pt}未参与本次实验执行与代码实现。\\[0.6em]
-\MemberInfo{朱奕}{N/A}{N/A} & \vspace{0pt}未参与本次实验执行与代码实现。\\[0.6em]
-\end{tabularx}}
-\end{tcolorbox}
+\setlength{\tabcolsep}{0pt}%
+\begin{longtable}{@{}p{0.34\linewidth}@{\hspace{1.2em}}p{0.62\linewidth}@{}}
+\MemberInfo{\StudentName}{\StudentID}{panyuxuan231@mails.ucas.ac.cn} & \parbox[t]{\linewidth}{\vspace{0pt}负责整体方案设计与实现；完成文本/音频/多模态与融合特征提取、线性编码模型与评估、ROI 分析与可视化；整理结果并撰写报告。}\\[0.8em]
+\MemberInfo{林俊杰}{2023K8009916012}{linjunjie23@mails.ucas.ac.cn} & \parbox[t]{\linewidth}{\vspace{0pt}参与ppt制作和报告撰写。}\\[0.8em]
+\MemberInfo{王煜}{2023K8009910006}{wangyu230@mails.ucas.ac.cn} & \parbox[t]{\linewidth}{\vspace{0pt}负责文本、音频的特征提取与模型评估的代码调试运行。}\\[0.8em]
+\MemberInfo{李向阳}{2023K8009907044}{lixiangyang23@mails.ucas.ac.cn} & \parbox[t]{\linewidth}{\vspace{0pt}负责多模态融合模型、文本-音频特征融合提取评估的代码调试运行。}\\[0.8em]
+\MemberInfo{朱奕}{2023K8009910006}{wangyu230@mails.ucas.ac.cn} & \parbox[t]{\linewidth}{\vspace{0pt}负责文本、音频的特征提取与模型评估的代码调试运行。}\\[0.8em]
+\end{longtable}}
+\vspace{0.6em}
 
 本项目研究的问题是：在自然故事听觉范式下，预训练模型得到的刺激表征在多大程度上能够预测全脑 fMRI 响应，并且这种“对齐程度”在不同模态（文本、音频、多模态）与不同模型层级之间如何变化。该问题的出发点来自两条相互推进的研究线索。第一条线索是自然语音刺激下的语义系统映射。Huth 等使用长时自然故事并构建体素级编码模型，证明在严格的未见故事评估下，线性回归可以得到稳定可复现的语义地图，从而将“可预测性”作为语义表征的可测证据 \cite{Huth2016}。Zhang 等进一步把分析单位从语义类别扩展到语义关系，指出概念与关系并非由解剖上隔离的模块分别承载，而是通过跨网络的重叠模式编码并支持语义推理 \cite{Zhang2020}。第二条线索来自预训练模型与大脑对齐的集成建模。Schrimpf 等在统一评估协议下系统比较不同架构与不同层，发现 Transformer 模型通常更能解释语言相关脑区的活动，并强调跨模型的可比性与评估一致性 \cite{Schrimpf2021}。然而，“语言模型拟合脑数据”并不自动推出“大脑在执行下一词预测”。Antonello 与 Huth 通过多项分析指出，模型对齐可以由更一般的特征发现与语言结构归纳解释，且模型内部最擅长预测未来词的层并不必然是最佳脑编码层 \cite{Antonello2023}。因此，本项目把“多模型、多层”作为基本比较单位，以避免仅凭单一指标外推机制结论。
 
